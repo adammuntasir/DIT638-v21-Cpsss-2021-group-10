@@ -1,13 +1,13 @@
 # 2021-group-10
 
-## 1. 
+## To execute the code 
  - git clone git@git.chalmers.se:courses/dit638/students/2021-group-10.git
  - cd 2021-group-10/src
  - docker build -t cid/example:latest -f Dockerfile .
- - docker run --rm cid/example:latest <a number>
+ - docker run --rm cid/example:latest &lt;a number&gt;
 
 
-## 2. 
+## Team workflow 
 - To add new features: 
     - each member will create a separate branch to implement that feature 
     - when completed, each member creates a merge request asking another member to review the changes 
@@ -18,7 +18,7 @@
     - once done, the member creates a merge request asking another member to review the changes
     - Once approved, the branch can be merged into master
 
-## 3. 
+## Rules for commiting messages 
 - We will ensure to follow the below rules for commit messages:
 - Add a title and a body separated from each other
 - Start the message with capital letter
