@@ -7,5 +7,5 @@ int number = std::stoi(argv[1]);
     PrimeChecker pc;
     std::cout << "Group 10; " << number << " is a prime number? " << pc.isPrime(number) << std::endl;
 }
-    return 0; /*a comment*/
+    return 0; /*a good comment*/
 }
