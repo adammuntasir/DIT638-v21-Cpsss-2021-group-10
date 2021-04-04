@@ -18,7 +18,7 @@ RUN cd /opt/sources && \
     mkdir build && \
     cd build && \
     cmake -D CMAKE_BUILD_TYPE=Release .. && \
-    make && cp helloworld /tmp
+    make && make test  && cp helloworld /tmp
 
 ##################################################
 # Section 2: Bundle the application.
