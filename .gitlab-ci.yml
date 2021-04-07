@@ -30,16 +30,29 @@ stages:
 
 # Display information before we start the build.
 before_script:
+  # to remove dangling images. These are image layers that have no relation to any o#ther image in Docker and are no longer needed.
+
+  - docker image prune -f  
   - docker info
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
 # This section describes what shall be done to build and test the project.
 build-and-test:
+  
+  #the project must be built and tested on any push to any branch
+  only: 
+    - branches
+
   tags:
     - docker-build
   stage: build
   script:
-    - docker build -f ./src/Dockerfile ./src
+   # - docker build -f ./src/Dockerfile ./src
+     - docker build -t name:latest -f Dockerfile .
+    - mkdir cid
+    - docker create --cidfile "cid/container_id.cid" name:latest
+    - docker cp `cat cid/container_id.cid`:usr/bin/code_coverage.pdf .
+    - docker rm `cat cid/container_id.cid`
 
 # This section describes what shall be done to deploy artefacts from the project.
 release:
