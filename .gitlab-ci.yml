@@ -39,17 +39,10 @@ build-and-test:
     - docker-build
   stage: build
   script:
-  - docker build -f ./src/Dockerfile ./src  
+    - docker build -f Dockerfile .
+
 # This section describes what shall be done to deploy artefacts from the project.
 release:
-  before_script:
-    - mkdir -p ~/.docker/cli-plugins
-    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
-  only:
-    refs:
-      - tags
-    variables:
-      - $CI_COMMIT_TAG =~ /^v\d+.\d+.\d+$/
   tags:
     - docker-build
   stage: deploy
