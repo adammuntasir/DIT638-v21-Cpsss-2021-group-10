@@ -17,5 +17,18 @@ We will use either Discord or Google Meet for video chat.
 - If someone is not able to attend a group meeting, they should inform the team beforehand. 
  
 ## **How will we solve conflicts?** 
-- We will discuss disagreements in group meetings and try to reason for or against a decision to come to a conclusion. If not agreed, we can vote to a decision. In case of further conflict, we will consult a TA for further advice.
+All conflicts can be dealt with by adding suggestions instead of direct criticism. 
+Discussions start out by pointing to the positive points of the issue before heading to the conflict itself. 
+1. To reduce the probability of ending up in conflicts we can take preventative measures such as:
+    1. Discussing and task assigning will happen during the team meeting for each assignment. During the meeting each team member  will choose the task that he feels he could accomplish. 
+2. If the conflict is between two members we will encourage them to have this discussion privately before taking it to the group meeting as a lot of conflict happens due to miss understanding or lack of resources or knowledge gap. If not solved we will move to the next step.
+3. If any conflict arises due to different opinions or task assigning or even complaints about project progress or a team member not contributing we will move to the next step.
+    1. Further discussion will take place during this step. We will answer the following questions to have a deeper understanding of the issues: 
+        1. what is the conflict
+        2. why did the conflict happen
+        3. how to solve it
+    2. We will discuss disagreements in group meetings and try to reason for or against a decision to come to a conclusion. If not agreed, we can vote to a decision. In case of further conflict, we will consult a TA for further advice.
+    3. We can deal with less obvious conflicts through increasing communication between team members; 
+        1. if the conflict arise during pair programming then both should resolve it through directly discussing it while referring to either the course lectures or internet material
+        2. In case the pair are still not 100% sure that the conflict is solved then they can post questions in Discord in order get everyone's input
 
