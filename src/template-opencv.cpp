@@ -295,6 +295,20 @@ int32_t main(int32_t argc, char **argv)
                         turning_correct += 1.0;
                     }
                 }
+
+                straight_correct_p = (straight_correct / (straight_correct + straight_incorrect)) *100;
+                turning_correct_p = (turning_correct / (turning_correct + turning_incorrect)) *100;
+                straight_p = (straight_total / (turning_total + straight_total)) *100;
+                turning_p = (turning_total / (turning_total + straight_total)) *100;
+                total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) *100;
+
+                std::cout << "Correct 0 is " << straight_correct_p << std::endl;
+                std::cout << "Correct turn is " << turning_correct_p << std::endl;
+                std::cout << "straight total is " << straight_p << std::endl;
+                std::cout << "turning total is " << turning_p << std::endl;
+                std::cout << "Correct total is " << total_p << std::endl;
+                std::cout << "nr of frames " << turning_total + straight_total << std::endl;
+
                 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
