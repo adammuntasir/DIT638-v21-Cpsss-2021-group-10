@@ -163,8 +163,6 @@ int32_t main(int32_t argc, char **argv)
             int minV_b_reflection = 0;
             int maxV_b_reflection = 255;
 
-
-
             cv::Mat masked_y;
             cv::Mat masked_b;
             cv::Mat colouredImg;
@@ -173,7 +171,6 @@ int32_t main(int32_t argc, char **argv)
             cv::Mat masked_reflection;
             cv::Mat masked_blueAndReflection;
             cv::Mat masked_blueWithoutReflection;
-            
 
             float turning_correct = 0.0;
             float turning_incorrect = 0.0;
@@ -193,14 +190,13 @@ int32_t main(int32_t argc, char **argv)
             {
 
                 cluon::data::TimeStamp before{cluon::time::now()};
-                
+
                 // Access the latest received pedal position and lock the mutex
                 {
                     std::lock_guard<std::mutex> lck(gsrMutex);
                     actual_steeringAngle = gsr.groundSteering();
                     //std::cout << "main: groundSteering = " << gsr.groundSteering() << std::endl;
                 }
-
 
                 // OpenCV data structure to hold an image.
                 cv::Mat img;
@@ -242,11 +238,8 @@ int32_t main(int32_t argc, char **argv)
                                maxV_b_reflection),
                     masked_reflection);
 
-                
-
                 // Use bitwise AND operator to find reflections in blue cone image
                 cv::bitwise_and(masked_b, masked_reflection, masked_blueAndReflection);
-
 
                 // Use bitwise XOR operator to remove found reflections from blue cone image
                 cv::bitwise_xor(masked_blueAndReflection, masked_b, masked_blueWithoutReflection);
@@ -257,8 +250,6 @@ int32_t main(int32_t argc, char **argv)
                 // TODO: Here, you can add some code to check the sampleTimePoint when the current frame was captured.
                 sharedMemory->unlock();
 
-
-
                 // DETECT CONES ---------------------------
 
                 std::pair<cv::Mat, cv::Mat> reducedImg;
@@ -268,7 +259,6 @@ int32_t main(int32_t argc, char **argv)
 
                 cv::dilate(masked_y_b.second, reducedImg.second, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7)));
 
-
                 cv::Mat combined_masks;
                 cv::Mat resultAfterBlur;
 
@@ -276,16 +266,14 @@ int32_t main(int32_t argc, char **argv)
 
                 cv::GaussianBlur(combined_masks, resultAfterBlur, cv::Size(15, 15), 0);
 
-
                 cv::Mat dst(480, 640, CV_8UC3);
 
                 cv::Mat original = img.clone();
 
                 // Calculates a matrix of a perspective transform
-              
 
                 cv::warpPerspective(original, dst, getMatrix(), dst.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
-                
+
                 cv::Mat birdEyeView = dst;
                 const float CLUSTER_RANGE = 100.0;
 
@@ -314,8 +302,6 @@ int32_t main(int32_t argc, char **argv)
                     mc_transformed_yel = convertPoints(mc_yel);
                 }
 
-                
-
                 // check if need to check clusters
                 if (mc_transformed_yel.size() >= 1)
                 {
@@ -338,9 +324,73 @@ int32_t main(int32_t argc, char **argv)
                         }
                     }
                 }
+                // Draw contours
+                for (unsigned int i = 0; i < contours_yel.size(); i++)
+                {
+                    cv::circle(birdEyeView, mc_transformed_yel[i], 10, cv::Scalar(0, 0, 255), 1,
+                               CV_AA, 0);
+                }
 
+                // BLUE
+                std::vector<std::vector<cv::Point>> contours_blue;
+                std::vector<cv::Vec4i> hierarchy_blue;
+                cv::findContours(reducedImg.second, contours_blue, hierarchy_blue, CV_RETR_TREE,
+                                 CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
 
+                // Get the moments
+                std::vector<cv::Moments> mu_blue(contours_blue.size());
+                for (unsigned int i = 0; i < contours_blue.size(); i++)
+                {
+                    mu_blue[i] = moments(contours_blue[i], false);
+                }
 
+                //  Get the mass centers:
+                std::vector<cv::Point2f> mc_blue(contours_blue.size());
+                std::vector<cv::Point2f> mc_transformed_blue(contours_blue.size());
+                for (unsigned int i = 0; i < contours_blue.size(); i++)
+                {
+                    mc_blue[i] = cv::Point2f(mu_blue[i].m10 / mu_blue[i].m00,
+                                             mu_blue[i].m01 / mu_blue[i].m00);
+                    mc_blue[i].y = mc_blue[i].y + 240;
+                    // Changing perspective to birds-eye view
+                    mc_transformed_blue = convertPoints(mc_blue);
+                }
+
+                // check if need to check clusters
+                if (mc_transformed_blue.size() >= 1)
+                {
+
+                    // fix clusters
+                    for (unsigned int i = 0; i < (mc_transformed_blue.size() - 1); i++)
+                    {
+                        float y_value = mc_transformed_blue[i].y - mc_transformed_blue[i + 1].y;
+
+                        if (y_value < CLUSTER_RANGE)
+                        {
+                            float x_value = mc_transformed_blue[i].x - mc_transformed_blue[i + 1].x;
+
+                            if (x_value < CLUSTER_RANGE)
+                            {
+                                // if close, remove then one from the top of the frame
+                                mc_transformed_blue.erase(mc_transformed_blue.begin() + i);
+                                i--;
+                            }
+                        }
+                    }
+                }
+
+                // Draw contours
+                for (unsigned int i = 0; i < contours_blue.size(); i++)
+                {
+                    cv::circle(birdEyeView, mc_transformed_blue[i], 10, cv::Scalar(0, 0, 255),
+                               1, CV_AA, 0);
+                }
+
+                std::pair<std::vector<cv::Point2f>, std::vector<cv::Point2f>> contours_y_b =
+                    std::make_pair(mc_transformed_yel, mc_transformed_blue);
+
+                std::pair<std::vector<cv::Point2f>, std::vector<cv::Point2f>>
+                    cones_y_b = contours_y_b;
 
                 // Steering angle starts here --------------------------------------
 
@@ -358,29 +408,36 @@ int32_t main(int32_t argc, char **argv)
                     calculated_steeringAngle = 0;
                 }
 
-
-                if  (actual_steeringAngle == 0)
+                if (actual_steeringAngle == 0)
                 {
                     straight_total += 1.0;
-                    if ((calculated_steeringAngle >  (actual_steeringAngle * 1.05)) || (calculated_steeringAngle <  (actual_steeringAngle * 0.95))){
+                    if ((calculated_steeringAngle > (actual_steeringAngle * 1.05)) || (calculated_steeringAngle < (actual_steeringAngle * 0.95)))
+                    {
                         straight_incorrect += 1.0;
-                    }else{
+                    }
+                    else
+                    {
                         straight_correct += 1.0;
                     }
-                }else{
+                }
+                else
+                {
                     turning_total += 1.0;
-                    if ((calculated_steeringAngle >  (actual_steeringAngle * 1.5)) || (calculated_steeringAngle <  (actual_steeringAngle * 0.5))){
+                    if ((calculated_steeringAngle > (actual_steeringAngle * 1.5)) || (calculated_steeringAngle < (actual_steeringAngle * 0.5)))
+                    {
                         turning_incorrect += 1.0;
-                    }else{
+                    }
+                    else
+                    {
                         turning_correct += 1.0;
                     }
                 }
 
-                straight_correct_p = (straight_correct / (straight_correct + straight_incorrect)) *100;
-                turning_correct_p = (turning_correct / (turning_correct + turning_incorrect)) *100;
-                straight_p = (straight_total / (turning_total + straight_total)) *100;
-                turning_p = (turning_total / (turning_total + straight_total)) *100;
-                total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) *100;
+                straight_correct_p = (straight_correct / (straight_correct + straight_incorrect)) * 100;
+                turning_correct_p = (turning_correct / (turning_correct + turning_incorrect)) * 100;
+                straight_p = (straight_total / (turning_total + straight_total)) * 100;
+                turning_p = (turning_total / (turning_total + straight_total)) * 100;
+                total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) * 100;
 
                 std::cout << "Correct 0 is " << straight_correct_p << std::endl;
                 std::cout << "Correct turn is " << turning_correct_p << std::endl;
@@ -389,18 +446,15 @@ int32_t main(int32_t argc, char **argv)
                 std::cout << "Correct total is " << total_p << std::endl;
                 std::cout << "nr of frames " << turning_total + straight_total << std::endl;
 
-
                 cluon::data::TimeStamp after{cluon::time::now()};
 
                 float time_diff = cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before);
 
                 allFrames += time_diff;
-                
 
-                std::cout << "time diff= " << time_diff<< std::endl;
+                std::cout << "time diff= " << time_diff << std::endl;
                 std::cout << "time diff ave= " << allFrames / 367 << std::endl;
 
-                
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
                     std::lock_guard<std::mutex> lck(gsrMutex);
