@@ -26,7 +26,6 @@ variables:
   DOCKER_CLI_EXPERIMENTAL: enabled
   BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64
   BUILDX_BUILDER: platformbuilder
-  CI_BUILDX_ARCHS: "linux/amd64,linux/arm64,linux/arm/v7"
 
 
 services:
@@ -50,10 +49,6 @@ before_script:
   - docker buildx inspect --bootstrap ${BUILDX_BUILDER}
   - docker buildx ls
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  #- DOCKER_CLI_EXPERIMENTAL=enabled docker buildx create --name platformbuilder --use
-  #- DOCKER_CLI_EXPERIMENTAL=enabled docker buildx inspect --bootstrap
-  #- DOCKER_CLI_EXPERIMENTAL=enabled docker buildx ls df -h
-  - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
 
 # This section describes what shall be done to build and test the project.
 build-and-test:
@@ -74,8 +69,5 @@ release:
     - docker-build
   stage: deploy
   script:
-    #- docker buildx build --platform=${BUILDX_PLATFORM} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" --push .
-    #- docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG"
-    - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=${CI_BUILDX_ARCHS} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" --push .
+    - docker buildx build --platform=${BUILDX_PLATFORM} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" --push .
     - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG"
-
