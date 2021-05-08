@@ -116,7 +116,7 @@ int32_t main(int32_t argc, char **argv)
                 // https://github.com/chrberger/libcluon/blob/master/libcluon/testsuites/TestEnvelopeConverter.cpp#L31-L40
                 std::lock_guard<std::mutex> lck(gsrMutex);
                 gsr = cluon::extractMessage<opendlv::proxy::GroundSteeringRequest>(std::move(env));
-                std::cout << "lambda: groundSteering = " << gsr.groundSteering() << std::endl;
+                //std::cout << "lambda: groundSteering = " << gsr.groundSteering() << std::endl;
             };
 
             od4.dataTrigger(opendlv::proxy::GroundSteeringRequest::ID(), onGroundSteeringRequest);
@@ -134,34 +134,59 @@ int32_t main(int32_t argc, char **argv)
             }
             sharedMemory->unlock();
 
-            /*
-            int BlueminH{110};
-            int BluemaxH{135};
-            int BlueminS{70};
-            int BluemaxS{255};
-            int BlueminV{47};
-            int BluemaxV{255};
-*/
-            int BlueminH{111};
-            int BluemaxH{127};
-            int BlueminS{96};
-            int BluemaxS{255};
-            int BlueminV{40};
-            int BluemaxV{255};
-            /*
-            int YellowminH{6};
-            int YellowmaxH{30};
-            int YellowminS{51};
-            int YellowmaxS{255};
-            int YellowminV{75};
-            int YellowmaxV{255};
-*/
-            int YellowminH{10};
-            int YellowmaxH{29};
-            int YellowminS{58};
-            int YellowmaxS{159};
-            int YellowminV{137};
-            int YellowmaxV{255};
+            float actual_steeringAngle;
+
+            int minH_y = 6;
+            int maxH_y = 30;
+
+            int minS_y = 51;
+            int maxS_y = 235;
+
+            int minV_y = 75;
+            int maxV_y = 255;
+
+            int minH_b = 106;
+            int maxH_b = 155;
+
+            int minS_b = 59;
+            int maxS_b = 255;
+
+            int minV_b = 29;
+            int maxV_b = 255;
+
+            int minH_b_reflection = 121;
+            int maxH_b_reflection = 179;
+
+            int minS_b_reflection = 0;
+            int maxS_b_reflection = 98;
+
+            int minV_b_reflection = 0;
+            int maxV_b_reflection = 255;
+
+
+
+            cv::Mat masked_y;
+            cv::Mat masked_b;
+            cv::Mat colouredImg;
+            cv::Mat blueImg;
+            cv::Mat blueReflectionImg;
+            cv::Mat masked_reflection;
+            cv::Mat masked_blueAndReflection;
+            cv::Mat masked_blueWithoutReflection;
+            
+
+            float turning_correct = 0.0;
+            float turning_incorrect = 0.0;
+            float turning_total = 0.0;
+            float straight_total = 0.0;
+            float straight_correct = 0.0;
+            float straight_incorrect = 0.0;
+            float straight_correct_p = 0.0;
+            float turning_correct_p = 0.0;
+            float straight_p = 0.0;
+            float turning_p = 0.0;
+            float total_p = 0.0;
+            float allFrames = 0.0;
 
             // Endless loop; end the program by pressing Ctrl-C.
             while (od4.isRunning())
