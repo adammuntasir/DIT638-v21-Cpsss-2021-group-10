@@ -259,6 +259,86 @@ int32_t main(int32_t argc, char **argv)
 
 
 
+                // DETECT CONES ---------------------------
+
+                std::pair<cv::Mat, cv::Mat> reducedImg;
+
+                cv::dilate(masked_y_b.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
+                cv::erode(reducedImg.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(6, 6)));
+
+                cv::dilate(masked_y_b.second, reducedImg.second, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7)));
+
+
+                cv::Mat combined_masks;
+                cv::Mat resultAfterBlur;
+
+                cv::bitwise_or(reducedImg.second, reducedImg.first, combined_masks);
+
+                cv::GaussianBlur(combined_masks, resultAfterBlur, cv::Size(15, 15), 0);
+
+
+                cv::Mat dst(480, 640, CV_8UC3);
+
+                cv::Mat original = img.clone();
+
+                // Calculates a matrix of a perspective transform
+              
+
+                cv::warpPerspective(original, dst, getMatrix(), dst.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+                
+                cv::Mat birdEyeView = dst;
+                const float CLUSTER_RANGE = 100.0;
+
+                // YELLOW
+                std::vector<std::vector<cv::Point>> contours_yel;
+                std::vector<cv::Vec4i> hierarchy_yel;
+                cv::findContours(reducedImg.first, contours_yel, hierarchy_yel, CV_RETR_TREE,
+                                 CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+                // Get the moments
+                std::vector<cv::Moments> mu_yel(contours_yel.size());
+                for (unsigned int i = 0; i < contours_yel.size(); i++)
+                {
+                    mu_yel[i] = moments(contours_yel[i], false);
+                }
+
+                // Get the mass centers:
+                std::vector<cv::Point2f> mc_yel(contours_yel.size());
+                std::vector<cv::Point2f> mc_transformed_yel(contours_yel.size());
+                for (unsigned int i = 0; i < contours_yel.size(); i++)
+                {
+                    mc_yel[i] = cv::Point2f(mu_yel[i].m10 / mu_yel[i].m00,
+                                            mu_yel[i].m01 / mu_yel[i].m00);
+                    mc_yel[i].y = mc_yel[i].y + 240;
+
+                    mc_transformed_yel = convertPoints(mc_yel);
+                }
+
+                
+
+                // check if need to check clusters
+                if (mc_transformed_yel.size() >= 1)
+                {
+
+                    // fix clusters
+                    for (unsigned int i = 0; i < (mc_transformed_yel.size() - 1); i++)
+                    {
+                        float y_value = mc_transformed_yel[i].y - mc_transformed_yel[i + 1].y;
+
+                        if (y_value < CLUSTER_RANGE)
+                        {
+                            float x_value = mc_transformed_yel[i].x - mc_transformed_yel[i + 1].x;
+
+                            if (x_value < CLUSTER_RANGE)
+                            {
+                                // if close, remove then one from the top of the frame
+                                mc_transformed_yel.erase(mc_transformed_yel.begin() + i);
+                                i--;
+                            }
+                        }
+                    }
+                }
+
 
 
 
