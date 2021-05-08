@@ -77,4 +77,5 @@ release:
     #- docker buildx build --platform=${BUILDX_PLATFORM} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" --push .
     #- docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG"
     - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=${CI_BUILDX_ARCHS} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" --push .
+    - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG"
 
