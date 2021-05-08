@@ -277,6 +277,24 @@ int32_t main(int32_t argc, char **argv)
                 {
                     calculated_steeringAngle = 0;
                 }
+
+
+                if  (actual_steeringAngle == 0)
+                {
+                    straight_total += 1.0;
+                    if ((calculated_steeringAngle >  (actual_steeringAngle * 1.05)) || (calculated_steeringAngle <  (actual_steeringAngle * 0.95))){
+                        straight_incorrect += 1.0;
+                    }else{
+                        straight_correct += 1.0;
+                    }
+                }else{
+                    turning_total += 1.0;
+                    if ((calculated_steeringAngle >  (actual_steeringAngle * 1.5)) || (calculated_steeringAngle <  (actual_steeringAngle * 0.5))){
+                        turning_incorrect += 1.0;
+                    }else{
+                        turning_correct += 1.0;
+                    }
+                }
                 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
