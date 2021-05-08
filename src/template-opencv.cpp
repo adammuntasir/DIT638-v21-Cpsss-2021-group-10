@@ -257,6 +257,26 @@ int32_t main(int32_t argc, char **argv)
                 // TODO: Here, you can add some code to check the sampleTimePoint when the current frame was captured.
                 sharedMemory->unlock();
 
+
+
+
+
+
+                // Steering angle starts here --------------------------------------
+
+                float calculated_steeringAngle;
+
+                // after reverse engingeering the groundsteering requests we find out that the ground steering request that are less than 80 degrees means we can send ground steering request
+                if ((angleOfRoad < 90) || (angleOfRoad > 90))
+                {
+
+                    // Getting a value between 0 and 0.6 based on the angle
+                    calculated_steeringAngle = ((angleOfRoad)*0.003333) - 0.3;
+                }
+                else
+                {
+                    calculated_steeringAngle = 0;
+                }
                 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
