@@ -62,6 +62,17 @@ cv::Mat getMatrix()
     return M;
 }
 
+std::vector<cv::Point2f> convertPoints(std::vector<cv::Point2f> coordinates)
+{
+
+    cv::Mat M = getMatrix();
+    std::vector<cv::Point2f> dst_points;
+
+    // Changing perspective to birds-eye view
+    cv::perspectiveTransform(coordinates, dst_points, M);
+    return dst_points;
+}
+
 int32_t main(int32_t argc, char **argv)
 {
     int32_t retCode{1};
