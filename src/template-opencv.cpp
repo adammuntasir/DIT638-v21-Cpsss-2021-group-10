@@ -34,6 +34,34 @@
 #define X_POSITION_OF_CAR 320
 #define Y_POSITION_OF_CAR 480
 
+cv::Mat getMatrix()
+{
+
+    cv::Point2f src_vertices[4];
+    src_vertices[0] = cv::Point(207, 285);
+    src_vertices[1] = cv::Point(364, 285);
+    src_vertices[2] = cv::Point(476, 350);
+    src_vertices[3] = cv::Point(89, 353);
+
+    // How the vertices should be mapped on the destination image
+    //
+    //    [0]   [1]
+    //
+    //    [2]   [3]
+    //
+
+    cv::Point2f dst_vertices[4];
+
+    // CLOSE PERSPECTIVE
+    dst_vertices[0] = cv::Point(125, 130);
+    dst_vertices[1] = cv::Point(390, 130);
+    dst_vertices[2] = cv::Point(390, 395);
+    dst_vertices[3] = cv::Point(125, 395);
+
+    cv::Mat M = getPerspectiveTransform(src_vertices, dst_vertices);
+    return M;
+}
+
 int32_t main(int32_t argc, char **argv)
 {
     int32_t retCode{1};
