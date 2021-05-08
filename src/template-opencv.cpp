@@ -25,10 +25,53 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include <fstream> //used for file handling
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <mutex>
+#define PI 3.1415926535
+#define X_POSITION_OF_CAR 320
+#define Y_POSITION_OF_CAR 480
+
+cv::Mat getMatrix()
+{
+
+    cv::Point2f src_vertices[4];
+    src_vertices[0] = cv::Point(207, 285);
+    src_vertices[1] = cv::Point(364, 285);
+    src_vertices[2] = cv::Point(476, 350);
+    src_vertices[3] = cv::Point(89, 353);
+
+    // How the vertices should be mapped on the destination image
+    //
+    //    [0]   [1]
+    //
+    //    [2]   [3]
+    //
+
+    cv::Point2f dst_vertices[4];
+
+    // CLOSE PERSPECTIVE
+    dst_vertices[0] = cv::Point(125, 130);
+    dst_vertices[1] = cv::Point(390, 130);
+    dst_vertices[2] = cv::Point(390, 395);
+    dst_vertices[3] = cv::Point(125, 395);
+
+    cv::Mat M = getPerspectiveTransform(src_vertices, dst_vertices);
+    return M;
+}
+
+std::vector<cv::Point2f> convertPoints(std::vector<cv::Point2f> coordinates)
+{
+
+    cv::Mat M = getMatrix();
+    std::vector<cv::Point2f> dst_points;
+
+    // Changing perspective to birds-eye view
+    cv::perspectiveTransform(coordinates, dst_points, M);
+    return dst_points;
+}
 
 int32_t main(int32_t argc, char **argv)
 {
@@ -73,7 +116,7 @@ int32_t main(int32_t argc, char **argv)
                 // https://github.com/chrberger/libcluon/blob/master/libcluon/testsuites/TestEnvelopeConverter.cpp#L31-L40
                 std::lock_guard<std::mutex> lck(gsrMutex);
                 gsr = cluon::extractMessage<opendlv::proxy::GroundSteeringRequest>(std::move(env));
-                std::cout << "lambda: groundSteering = " << gsr.groundSteering() << std::endl;
+                //std::cout << "lambda: groundSteering = " << gsr.groundSteering() << std::endl;
             };
 
             od4.dataTrigger(opendlv::proxy::GroundSteeringRequest::ID(), onGroundSteeringRequest);
@@ -91,38 +134,74 @@ int32_t main(int32_t argc, char **argv)
             }
             sharedMemory->unlock();
 
-            /*
-            int BlueminH{110};
-            int BluemaxH{135};
-            int BlueminS{70};
-            int BluemaxS{255};
-            int BlueminV{47};
-            int BluemaxV{255};
-*/
-            int BlueminH{111};
-            int BluemaxH{127};
-            int BlueminS{96};
-            int BluemaxS{255};
-            int BlueminV{40};
-            int BluemaxV{255};
-            /*
-            int YellowminH{6};
-            int YellowmaxH{30};
-            int YellowminS{51};
-            int YellowmaxS{255};
-            int YellowminV{75};
-            int YellowmaxV{255};
-*/
-            int YellowminH{10};
-            int YellowmaxH{29};
-            int YellowminS{58};
-            int YellowmaxS{159};
-            int YellowminV{137};
-            int YellowmaxV{255};
+            float actual_steeringAngle;
+
+            int minH_y = 6;
+            int maxH_y = 30;
+
+            int minS_y = 51;
+            int maxS_y = 235;
+
+            int minV_y = 75;
+            int maxV_y = 255;
+
+            int minH_b = 106;
+            int maxH_b = 155;
+
+            int minS_b = 59;
+            int maxS_b = 255;
+
+            int minV_b = 29;
+            int maxV_b = 255;
+
+            int minH_b_reflection = 121;
+            int maxH_b_reflection = 179;
+
+            int minS_b_reflection = 0;
+            int maxS_b_reflection = 98;
+
+            int minV_b_reflection = 0;
+            int maxV_b_reflection = 255;
+
+
+
+            cv::Mat masked_y;
+            cv::Mat masked_b;
+            cv::Mat colouredImg;
+            cv::Mat blueImg;
+            cv::Mat blueReflectionImg;
+            cv::Mat masked_reflection;
+            cv::Mat masked_blueAndReflection;
+            cv::Mat masked_blueWithoutReflection;
+            
+
+            float turning_correct = 0.0;
+            float turning_incorrect = 0.0;
+            float turning_total = 0.0;
+            float straight_total = 0.0;
+            float straight_correct = 0.0;
+            float straight_incorrect = 0.0;
+            float straight_correct_p = 0.0;
+            float turning_correct_p = 0.0;
+            float straight_p = 0.0;
+            float turning_p = 0.0;
+            float total_p = 0.0;
+            float allFrames = 0.0;
 
             // Endless loop; end the program by pressing Ctrl-C.
             while (od4.isRunning())
             {
+
+                cluon::data::TimeStamp before{cluon::time::now()};
+                
+                // Access the latest received pedal position and lock the mutex
+                {
+                    std::lock_guard<std::mutex> lck(gsrMutex);
+                    actual_steeringAngle = gsr.groundSteering();
+                    //std::cout << "main: groundSteering = " << gsr.groundSteering() << std::endl;
+                }
+
+
                 // OpenCV data structure to hold an image.
                 cv::Mat img;
                 cv::Mat cropped;
@@ -142,47 +221,110 @@ int32_t main(int32_t argc, char **argv)
 
                     img = cv::cvarrToMat(iplimage);
 
-                    cropped = img(cv::Rect(0, img.rows / 2, img.cols, img.rows / 2));
+                    cropped = img(cv::Rect(0, img.rows / 2, img.cols, 160));
                 }
+                cv::cvtColor(cropped, colouredImg, CV_BGR2HSV);
+
+                // Colour process to detect yellow cones
+                cv::inRange(colouredImg, cv::Scalar(minH_y, minS_y, minV_y),
+                            cv::Scalar(maxH_y, maxS_y, maxV_y),
+                            masked_y);
+
+                // Colour process to detect blue cones
+                cv::inRange(colouredImg, cv::Scalar(minH_b, minS_b, minV_b),
+                            cv::Scalar(maxH_b, maxS_b, maxV_b), masked_b);
+
+                // Colour process to detect large reflections
+                cv::inRange(
+                    colouredImg,
+                    cv::Scalar(minH_b_reflection, minS_b_reflection, minV_b_reflection),
+                    cv::Scalar(maxH_b_reflection, maxS_b_reflection,
+                               maxV_b_reflection),
+                    masked_reflection);
+
+                
+
+                // Use bitwise AND operator to find reflections in blue cone image
+                cv::bitwise_and(masked_b, masked_reflection, masked_blueAndReflection);
+
+
+                // Use bitwise XOR operator to remove found reflections from blue cone image
+                cv::bitwise_xor(masked_blueAndReflection, masked_b, masked_blueWithoutReflection);
+
+                std::pair<cv::Mat, cv::Mat> masked_y_b =
+                    std::make_pair(masked_y, masked_blueWithoutReflection);
+
                 // TODO: Here, you can add some code to check the sampleTimePoint when the current frame was captured.
                 sharedMemory->unlock();
 
-                // TODO: Do something with the frame.
-                // Example: Draw a red rectangle and display image.
-                //cv::rectangle(img, cv::Point(50, 50), cv::Point(100, 100), cv::Scalar(0,0,255));
 
-                cv::Mat imgHSV;
-                cvtColor(cropped, imgHSV, cv::COLOR_BGR2HSV);
 
-                // DETECT CONES ---------------------------
 
-                // processing to detect blue cones
-                cv::Mat BLueimgColorSpace;
-                cv::inRange(imgHSV, cv::Scalar(BlueminH, BlueminS, BlueminV), cv::Scalar(BluemaxH, BluemaxS, BluemaxV), BLueimgColorSpace);
 
-                // processing to detect yellow cones
-                cv::Mat YellowimgColorSpace;
-                cv::inRange(imgHSV, cv::Scalar(YellowminH, YellowminS, YellowminV), cv::Scalar(YellowmaxH, YellowmaxS, YellowmaxV), YellowimgColorSpace);
 
-                // merging the two masks into the cropped video
-                cv::Mat combined;
-                cv::bitwise_or(BLueimgColorSpace, YellowimgColorSpace, combined);
-                //std::pair<cv::Mat, cv::Mat> pairs = stid::make_pair(YellowimgColorSpace, BLueimgColorSpace);
+                // Steering angle starts here --------------------------------------
 
-                // ERODE AND DILATE FROM THIS POINT ---------------------------
+                float calculated_steeringAngle;
 
-                cv::Mat afterErosion;
-                cv::Mat afterDilation;
+                // after reverse engingeering the groundsteering requests we find out that the ground steering request that are less than 80 degrees means we can send ground steering request
+                if ((angleOfRoad < 90) || (angleOfRoad > 90))
+                {
 
-                cv::dilate(combined, afterDilation, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
-                cv::erode(afterDilation, afterErosion, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(8, 8)));
+                    // Getting a value between 0 and 0.6 based on the angle
+                    calculated_steeringAngle = ((angleOfRoad)*0.003333) - 0.3;
+                }
+                else
+                {
+                    calculated_steeringAngle = 0;
+                }
 
-                cv::imshow("Color-Space Image", afterErosion);
 
+                if  (actual_steeringAngle == 0)
+                {
+                    straight_total += 1.0;
+                    if ((calculated_steeringAngle >  (actual_steeringAngle * 1.05)) || (calculated_steeringAngle <  (actual_steeringAngle * 0.95))){
+                        straight_incorrect += 1.0;
+                    }else{
+                        straight_correct += 1.0;
+                    }
+                }else{
+                    turning_total += 1.0;
+                    if ((calculated_steeringAngle >  (actual_steeringAngle * 1.5)) || (calculated_steeringAngle <  (actual_steeringAngle * 0.5))){
+                        turning_incorrect += 1.0;
+                    }else{
+                        turning_correct += 1.0;
+                    }
+                }
+
+                straight_correct_p = (straight_correct / (straight_correct + straight_incorrect)) *100;
+                turning_correct_p = (turning_correct / (turning_correct + turning_incorrect)) *100;
+                straight_p = (straight_total / (turning_total + straight_total)) *100;
+                turning_p = (turning_total / (turning_total + straight_total)) *100;
+                total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) *100;
+
+                std::cout << "Correct 0 is " << straight_correct_p << std::endl;
+                std::cout << "Correct turn is " << turning_correct_p << std::endl;
+                std::cout << "straight total is " << straight_p << std::endl;
+                std::cout << "turning total is " << turning_p << std::endl;
+                std::cout << "Correct total is " << total_p << std::endl;
+                std::cout << "nr of frames " << turning_total + straight_total << std::endl;
+
+
+                cluon::data::TimeStamp after{cluon::time::now()};
+
+                float time_diff = cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before);
+
+                allFrames += time_diff;
+                
+
+                std::cout << "time diff= " << time_diff<< std::endl;
+                std::cout << "time diff ave= " << allFrames / 367 << std::endl;
+
+                
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
                     std::lock_guard<std::mutex> lck(gsrMutex);
-                    std::cout << "main: groundSteering = " << gsr.groundSteering() << std::endl;
+                    //std::cout << "main: groundSteering = " << gsr.groundSteering() << std::endl;
                 }
 
                 // Display image on your screen.
