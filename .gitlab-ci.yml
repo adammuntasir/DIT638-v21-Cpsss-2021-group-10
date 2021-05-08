@@ -37,15 +37,15 @@ before_script:
 # This section describes what shall be done to build and test the project.
 build-and-test:
   tags:
-    - docker-build
+  - docker-build
   stage: build
   script:
-    - docker build -f Dockerfile .
+  - docker build -f Dockerfile .
 
 # This section describes what shall be done to deploy artefacts from the project.
 release:
-    - docker-build
+  - docker-build
 stage: deploy
 script:
-    - docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" .
-    - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG"
+  - docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" .
+  - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG"
