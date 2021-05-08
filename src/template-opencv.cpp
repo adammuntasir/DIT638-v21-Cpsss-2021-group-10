@@ -309,11 +309,22 @@ int32_t main(int32_t argc, char **argv)
                 std::cout << "Correct total is " << total_p << std::endl;
                 std::cout << "nr of frames " << turning_total + straight_total << std::endl;
 
+
+                cluon::data::TimeStamp after{cluon::time::now()};
+
+                float time_diff = cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before);
+
+                allFrames += time_diff;
+                
+
+                std::cout << "time diff= " << time_diff<< std::endl;
+                std::cout << "time diff ave= " << allFrames / 367 << std::endl;
+
                 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
                     std::lock_guard<std::mutex> lck(gsrMutex);
-                    std::cout << "main: groundSteering = " << gsr.groundSteering() << std::endl;
+                    //std::cout << "main: groundSteering = " << gsr.groundSteering() << std::endl;
                 }
 
                 // Display image on your screen.
