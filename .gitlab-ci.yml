@@ -1,4 +1,4 @@
-# Copyright (C) 2020  Christian Berger
+# Copyright (C) 2021  Christian Berger
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,18 +14,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Which Docker image shall be used on the GitLab runner?
-image: docker:19.03.3
+image: registry.git.chalmers.se/courses/dit638/students/docker/docker:19.03.3
 
 # Details about how to connect to the Docker service to run this build.
 variables:
   DOCKER_HOST: tcp://docker:2375
-  DOCKER_DRIVER: overlay2
   DOCKER_TLS_CERTDIR: ""
+  BUILDX_PLATFORM: linux/amd64,linux/arm64
+  DOCKER_DRIVER: overlay2
+  DOCKER_BUILDKIT: 1
+  DOCKER_CLI_EXPERIMENTAL: enabled
+  BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64
+  BUILDX_BUILDER: platformbuilder
   CI_BUILDX_ARCHS: "linux/amd64,linux/arm64,linux/arm/v7"
-  BUILDX_URL: https://github.com/docker/buildx/releases/download/v0.3.1/buildx-v0.3.1.linux-amd64
+
 
 services:
-  - name: docker:19.03.3-dind
+  - name: registry.git.chalmers.se/courses/dit638/students/docker/docker:19.03.3-dind
+    alias: docker
+    command: ["--experimental"]
 
 stages:
   - build
@@ -33,48 +40,42 @@ stages:
 
 # Display information before we start the build.
 before_script:
-  - docker image prune -f
   - docker info
+  - mkdir -p $HOME/.docker/cli-plugins/
+  - wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL
+  - chmod a+x $HOME/.docker/cli-plugins/docker-buildx
+  - "echo -e '{\n  \"experimental\": \"enabled\"\n}' | tee $HOME/.docker/config.json"
+  - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+  - docker buildx create --use --driver docker-container --name ${BUILDX_BUILDER} --platform=${BUILDX_PLATFORM}
+  - docker buildx inspect --bootstrap ${BUILDX_BUILDER}
+  - docker buildx ls
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  #- DOCKER_CLI_EXPERIMENTAL=enabled docker buildx create --name platformbuilder --use
+  #- DOCKER_CLI_EXPERIMENTAL=enabled docker buildx inspect --bootstrap
+  #- DOCKER_CLI_EXPERIMENTAL=enabled docker buildx ls df -h
+  - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
 
 # This section describes what shall be done to build and test the project.
 build-and-test:
-  only: 
-    - branches
   tags:
     - docker-build
   stage: build
   script:
-    - docker build -t name:latest -f Dockerfile .
-    - mkdir cid
-    - docker create --cidfile "cid/container_id.cid" name:latest
-    - docker cp `cat cid/container_id.cid`:usr/bin/code_coverage.pdf .
-    - docker rm `cat cid/container_id.cid`
-  artifacts:
-    when: always
-    paths: 
-      - code_coverage.pdf
-    expire_in: 10 days
+    - docker build -f Dockerfile .
 
 # This section describes what shall be done to deploy artefacts from the project.
 release:
-  before_script:
-    - mkdir -p ~/.docker/cli-plugins
-    - wget -O ~/.docker/cli-plugins/docker-buildx $BUILDX_URL
-    - chmod 755 ~/.docker/cli-plugins/docker-buildx
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx create --name platformbuilder --use
-    - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx inspect --bootstrap
-    - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx ls df -h
-    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   only:
     refs:
       - tags
-    variables:
+    variables: #  the deployment stage must only be executed when the tags to your repository follow semantic versioning vX.Y.Z
       - $CI_COMMIT_TAG =~ /^v\d+.\d+.\d+$/
   tags:
     - docker-build
   stage: deploy
   script:
-    #- docker build -f Dockerfile -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" .
-    - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform $CI_BUILDX_ARCHS -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_TAG" --push .
+    #- docker buildx build --platform=${BUILDX_PLATFORM} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" --push .
+    #- docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG"
+    - DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform=${CI_BUILDX_ARCHS} -t "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG" --push .
+    - docker push "$CI_REGISTRY_IMAGE":"$CI_COMMIT_REF_SLUG"
+
