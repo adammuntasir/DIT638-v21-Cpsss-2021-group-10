@@ -191,6 +191,17 @@ int32_t main(int32_t argc, char **argv)
             // Endless loop; end the program by pressing Ctrl-C.
             while (od4.isRunning())
             {
+
+                cluon::data::TimeStamp before{cluon::time::now()};
+                
+                // Access the latest received pedal position and lock the mutex
+                {
+                    std::lock_guard<std::mutex> lck(gsrMutex);
+                    actual_steeringAngle = gsr.groundSteering();
+                    //std::cout << "main: groundSteering = " << gsr.groundSteering() << std::endl;
+                }
+
+
                 // OpenCV data structure to hold an image.
                 cv::Mat img;
                 cv::Mat cropped;
@@ -210,43 +221,43 @@ int32_t main(int32_t argc, char **argv)
 
                     img = cv::cvarrToMat(iplimage);
 
-                    cropped = img(cv::Rect(0, img.rows / 2, img.cols, img.rows / 2));
+                    cropped = img(cv::Rect(0, img.rows / 2, img.cols, 160));
                 }
+                cv::cvtColor(cropped, colouredImg, CV_BGR2HSV);
+
+                // Colour process to detect yellow cones
+                cv::inRange(colouredImg, cv::Scalar(minH_y, minS_y, minV_y),
+                            cv::Scalar(maxH_y, maxS_y, maxV_y),
+                            masked_y);
+
+                // Colour process to detect blue cones
+                cv::inRange(colouredImg, cv::Scalar(minH_b, minS_b, minV_b),
+                            cv::Scalar(maxH_b, maxS_b, maxV_b), masked_b);
+
+                // Colour process to detect large reflections
+                cv::inRange(
+                    colouredImg,
+                    cv::Scalar(minH_b_reflection, minS_b_reflection, minV_b_reflection),
+                    cv::Scalar(maxH_b_reflection, maxS_b_reflection,
+                               maxV_b_reflection),
+                    masked_reflection);
+
+                
+
+                // Use bitwise AND operator to find reflections in blue cone image
+                cv::bitwise_and(masked_b, masked_reflection, masked_blueAndReflection);
+
+
+                // Use bitwise XOR operator to remove found reflections from blue cone image
+                cv::bitwise_xor(masked_blueAndReflection, masked_b, masked_blueWithoutReflection);
+
+                std::pair<cv::Mat, cv::Mat> masked_y_b =
+                    std::make_pair(masked_y, masked_blueWithoutReflection);
+
                 // TODO: Here, you can add some code to check the sampleTimePoint when the current frame was captured.
                 sharedMemory->unlock();
 
-                // TODO: Do something with the frame.
-                // Example: Draw a red rectangle and display image.
-                //cv::rectangle(img, cv::Point(50, 50), cv::Point(100, 100), cv::Scalar(0,0,255));
-
-                cv::Mat imgHSV;
-                cvtColor(cropped, imgHSV, cv::COLOR_BGR2HSV);
-
-                // DETECT CONES ---------------------------
-
-                // processing to detect blue cones
-                cv::Mat BLueimgColorSpace;
-                cv::inRange(imgHSV, cv::Scalar(BlueminH, BlueminS, BlueminV), cv::Scalar(BluemaxH, BluemaxS, BluemaxV), BLueimgColorSpace);
-
-                // processing to detect yellow cones
-                cv::Mat YellowimgColorSpace;
-                cv::inRange(imgHSV, cv::Scalar(YellowminH, YellowminS, YellowminV), cv::Scalar(YellowmaxH, YellowmaxS, YellowmaxV), YellowimgColorSpace);
-
-                // merging the two masks into the cropped video
-                cv::Mat combined;
-                cv::bitwise_or(BLueimgColorSpace, YellowimgColorSpace, combined);
-                //std::pair<cv::Mat, cv::Mat> pairs = stid::make_pair(YellowimgColorSpace, BLueimgColorSpace);
-
-                // ERODE AND DILATE FROM THIS POINT ---------------------------
-
-                cv::Mat afterErosion;
-                cv::Mat afterDilation;
-
-                cv::dilate(combined, afterDilation, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)));
-                cv::erode(afterDilation, afterErosion, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(8, 8)));
-
-                cv::imshow("Color-Space Image", afterErosion);
-
+                
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
                     std::lock_guard<std::mutex> lck(gsrMutex);
