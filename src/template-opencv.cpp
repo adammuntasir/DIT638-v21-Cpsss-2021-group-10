@@ -25,10 +25,14 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#include <fstream> //used for file handling
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <mutex>
+#define PI 3.1415926535
+#define X_POSITION_OF_CAR 320
+#define Y_POSITION_OF_CAR 480
 
 int32_t main(int32_t argc, char **argv)
 {
