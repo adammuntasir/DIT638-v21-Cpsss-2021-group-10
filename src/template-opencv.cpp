@@ -391,6 +391,189 @@ int32_t main(int32_t argc, char **argv)
 
                 std::pair<std::vector<cv::Point2f>, std::vector<cv::Point2f>>
                     cones_y_b = contours_y_b;
+ //--------------------------------------------------this is the start of calculating angles --------------------------------
+
+                float angleOfRoad = 0.0;
+                float yellowAngle = 0.0;
+                float blueAngle = 0.0;
+
+                // If there are at least 2 blue and 2 yellow cones
+                if ((cones_y_b.first.size() >= 1) && (cones_y_b.second.size() >= 1))
+                {
+
+                    
+
+                    //-------------------yellow  angle
+
+                    std::sort(cones_y_b.first.begin(), cones_y_b.first.end(),
+                              [](const cv::Point2f &a, const cv::Point2f &b) {
+                                  return a.y > b.y; // Sorting in order from highest to lowest
+                              });
+
+                    float distance = std::sqrt(std::pow(cones_y_b.first[0].x - X_POSITION_OF_CAR, 2) +
+                                               std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
+
+                    float angle;
+                    if (distance < 200)
+                    {
+                        // Getting the angle in radians
+                        float radians =
+                            std::atan2(cones_y_b.first[0].y - cones_y_b.first[1].y, cones_y_b.first[0].x - cones_y_b.first[1].x);
+
+                        // Converting to degrees
+                        float degrees = radians * 180 / PI;
+
+                        // Adjusting so the value is measured from right x axis
+                        float adjusted = 180 - degrees;
+
+                        if (adjusted > 60 && adjusted < 120)
+                        {
+                            angle = 90;
+                        }
+                        else
+                        {
+                            angle = adjusted;
+                        }
+                    }
+                    else
+                    {
+                        angle = 90;
+                    }
+                    yellowAngle = angle;
+
+                    //-------------------blue angle
+
+                    std::sort(cones_y_b.second.begin(), cones_y_b.second.end(),
+                              [](const cv::Point2f &a, const cv::Point2f &b) {
+                                  return a.y > b.y; // Sorting in order from highest to lowest
+                              });
+
+                    float distance2 = std::sqrt(std::pow(cones_y_b.second[0].x - X_POSITION_OF_CAR, 2) +
+                                                std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
+
+                    float angle2;
+                    if (distance2 < 200)
+                    {
+                        // Getting the angle in radians
+                        float radians2 =
+                            std::atan2(cones_y_b.second[0].y - cones_y_b.second[1].y, cones_y_b.second[0].x - cones_y_b.second[1].x);
+
+                        // Converting to degrees
+                        float degrees2 = radians2 * 180 / PI;
+
+                        // Adjusting so the value is measured from right x axis
+                        float adjusted2 = 180 - degrees2;
+
+                        if (adjusted2 > 60 && adjusted2 < 120)
+                        {
+                            angle2 = 90;
+                        }
+                        else
+                        {
+                            angle2 = adjusted2;
+                        }
+                    }
+                    else
+                    {
+                        angle2 = 90;
+                    }
+                    blueAngle = angle2;
+
+                    //----------------find mean
+
+                    // Taking the mean value of the found angles
+                    float meanAngle = (yellowAngle + blueAngle) / 2;
+                    angleOfRoad = meanAngle;
+                }
+                else if (cones_y_b.first.size() >= 1)
+                {
+
+                    //------------yellow is angle now
+
+                    std::sort(cones_y_b.first.begin(), cones_y_b.first.end(),
+                              [](const cv::Point2f &a, const cv::Point2f &b) {
+                                  return a.y > b.y; // Sorting in order from highest to lowest
+                              });
+
+                    float distance3 = std::sqrt(std::pow(cones_y_b.first[0].x - X_POSITION_OF_CAR, 2) +
+                                                std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
+
+                    float angle3;
+                    if (distance3 < 200)
+                    {
+                        // Getting the angle in radians
+                        float radians3 =
+                            std::atan2(cones_y_b.first[0].y - cones_y_b.first[1].y, cones_y_b.first[0].x - cones_y_b.first[1].x);
+
+                        // Converting to degrees
+                        float degrees3 = radians3 * 180 / PI;
+
+                        // Adjusting so the value is measured from right x axis
+                        float adjusted3 = 180 - degrees3;
+
+                        if (adjusted3 > 60 && adjusted3 < 120)
+                        {
+                            angle3 = 90;
+                        }
+                        else
+                        {
+                            angle3 = adjusted3;
+                        }
+                    }
+                    else
+                    {
+                        angle3 = 90;
+                    }
+                    yellowAngle = angle3;
+
+                    angleOfRoad = yellowAngle;
+                }
+                else if (cones_y_b.second.size() >= 1)
+                {
+
+                    std::sort(cones_y_b.second.begin(), cones_y_b.second.end(),
+                              [](const cv::Point2f &a, const cv::Point2f &b) {
+                                  return a.y > b.y; // Sorting in order from highest to lowest
+                              });
+
+                    float distance4 = std::sqrt(std::pow(cones_y_b.second[0].x - X_POSITION_OF_CAR, 2) +
+                                                std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
+
+                    float angle4;
+                    if (distance4 < 200)
+                    {
+                        // Getting the angle in radians
+                        float radians4 =
+                            std::atan2(cones_y_b.second[0].y - cones_y_b.second[1].y, cones_y_b.second[0].x - cones_y_b.second[1].x);
+
+                        // Converting to degrees
+                        float degrees4 = radians4 * 180 / PI;
+
+                        // Adjusting so the value is measured from right x axis
+                        float adjusted4 = 180 - degrees4;
+
+                        if (adjusted4 > 60 && adjusted4 < 120)
+                        {
+                            angle4 = 90;
+                        }
+                        else
+                        {
+                            angle4 = adjusted4;
+                        }
+                    }
+                    else
+                    {
+                        angle4 = 90;
+                    }
+                    blueAngle = angle4;
+
+                    angleOfRoad = blueAngle;
+                }
+                else
+                {
+
+                    angleOfRoad = 90;
+                }
 
                 // Steering angle starts here --------------------------------------
 
