@@ -254,7 +254,7 @@ int32_t main(int32_t argc, char **argv)
 
                 std::pair<cv::Mat, cv::Mat> reducedImg;
 
-                cv::dilate(masked_y_b.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
+                //cv::dilate(masked_y_b.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
                 cv::erode(reducedImg.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(6, 6)));
 
                 cv::dilate(masked_y_b.second, reducedImg.second, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7)));
