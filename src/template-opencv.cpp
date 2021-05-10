@@ -254,8 +254,8 @@ int32_t main(int32_t argc, char **argv)
 
                 std::pair<cv::Mat, cv::Mat> reducedImg;
 
-                cv::dilate(masked_y_b.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
-                cv::erode(reducedImg.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(6, 6)));
+                //cv::dilate(masked_y_b.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
+                cv::erode(masked_y_b.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(6, 6)));
 
                 cv::dilate(masked_y_b.second, reducedImg.second, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7)));
 
@@ -414,7 +414,7 @@ int32_t main(int32_t argc, char **argv)
                                                std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle;
-                    if (distance < 200)
+                    if (distance < 100)
                     {
                         // Getting the angle in radians
                         float radians =
@@ -452,7 +452,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle2;
-                    if (distance2 < 200)
+                    if (distance2 < 100)
                     {
                         // Getting the angle in radians
                         float radians2 =
@@ -499,7 +499,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle3;
-                    if (distance3 < 200)
+                    if (distance3 < 100)
                     {
                         // Getting the angle in radians
                         float radians3 =
@@ -540,7 +540,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle4;
-                    if (distance4 < 200)
+                    if (distance4 < 100)
                     {
                         // Getting the angle in radians
                         float radians4 =
