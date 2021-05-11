@@ -618,7 +618,7 @@ int32_t main(int32_t argc, char **argv)
                 turning_correct_p = (turning_correct / (turning_correct + turning_incorrect)) * 100;
                 straight_p = (straight_total / (turning_total + straight_total)) * 100;
                 turning_p = (turning_total / (turning_total + straight_total)) * 100;
-                total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) * 100;
+                total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) / 100;
                 /*
                 std::cout << "Correct 0 is " << straight_correct_p << std::endl;
                 std::cout << "Correct turn is " << turning_correct_p << std::endl;
