@@ -412,7 +412,7 @@ int32_t main(int32_t argc, char **argv)
                                                std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle;
-                    if (distance < 200)
+                    if (distance < 50)
                     {
                         // Getting the angle in radians
                         float radians =
@@ -450,7 +450,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle2;
-                    if (distance2 < 200)
+                    if (distance2 < 50)
                     {
                         // Getting the angle in radians
                         float radians2 =
@@ -497,7 +497,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle3;
-                    if (distance3 < 200)
+                    if (distance3 < 50)
                     {
                         // Getting the angle in radians
                         float radians3 =
@@ -538,7 +538,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle4;
-                    if (distance4 < 200)
+                    if (distance4 < 50)
                     {
                         // Getting the angle in radians
                         float radians4 =
@@ -618,7 +618,7 @@ int32_t main(int32_t argc, char **argv)
                 turning_correct_p = (turning_correct / (turning_correct + turning_incorrect)) * 100;
                 straight_p = (straight_total / (turning_total + straight_total)) * 100;
                 turning_p = (turning_total / (turning_total + straight_total)) * 100;
-                total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) * 100;
+                total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) / 100;
                 /*
                 std::cout << "Correct 0 is " << straight_correct_p << std::endl;
                 std::cout << "Correct turn is " << turning_correct_p << std::endl;
