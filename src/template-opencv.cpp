@@ -184,7 +184,6 @@ int32_t main(int32_t argc, char **argv)
             float turning_p = 0.0;
             float total_p = 0.0;
             float allFrames = 0.0;
-            float totalFrames = 0.0;
 
             // Endless loop; end the program by pressing Ctrl-C.
             while (od4.isRunning())
@@ -634,11 +633,11 @@ int32_t main(int32_t argc, char **argv)
                 float time_diff = cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before);
 
                 allFrames += time_diff;
-                totalFrames = turning_total + straight_total;
-                std::cout << "time diff= " << time_diff << std::endl;
-                std::cout << "time diff ave= " << allFrames / totalFrames << std::endl;
 
-                std::cout << "group_10;" << cluon::time::toMicroseconds(before) + (cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before)) << ";" << calculated_steeringAngle << std::endl;
+                // std::cout << "time diff= " << time_diff << std::endl;
+                // std::cout << "time diff ave= " << allFrames / 367 << std::endl;
+
+                std::cout << "group_06;" << cluon::time::toMicroseconds(before) + (cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before)) << ";" << calculated_steeringAngle << std::endl;
 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
