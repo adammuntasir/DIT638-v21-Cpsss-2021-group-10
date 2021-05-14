@@ -217,7 +217,7 @@ int32_t main(int32_t argc, char **argv)
 
                     img = cv::cvarrToMat(iplimage);
 
-                    cropped = img(cv::Rect(0, img.rows / 2, img.cols, 160));
+                    cropped = img(cv::Rect(0, img.rows / 2, img.cols, 120));
                 }
                 cv::cvtColor(cropped, colouredImg, CV_BGR2HSV);
 
