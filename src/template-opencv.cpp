@@ -637,7 +637,7 @@ int32_t main(int32_t argc, char **argv)
                 // std::cout << "time diff= " << time_diff << std::endl;
                 // std::cout << "time diff ave= " << allFrames / 367 << std::endl;
 
-                std::cout << "group_06;" << cluon::time::toMicroseconds(before) + (cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before)) << ";" << calculated_steeringAngle << std::endl;
+                std::cout << "group_10;" << cluon::time::toMicroseconds(before) + (cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before)) << ";" << calculated_steeringAngle << std::endl;
 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
