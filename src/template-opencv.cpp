@@ -398,7 +398,7 @@ int32_t main(int32_t argc, char **argv)
                 float blueAngle = 0.0;
 
                 // If there are at least 2 blue and 2 yellow cones
-                if ((cones_y_b.first.size() >= 1) && (cones_y_b.second.size() >= 1))
+                if ((cones_y_b.first.size() >= 2) && (cones_y_b.second.size() >= 2))
                 {
 
                     //-------------------yellow  angle
@@ -483,7 +483,7 @@ int32_t main(int32_t argc, char **argv)
                     float meanAngle = (yellowAngle + blueAngle) / 2;
                     angleOfRoad = meanAngle;
                 }
-                else if (cones_y_b.first.size() >= 1)
+                else if (cones_y_b.first.size() >= 2)
                 {
 
                     //------------yellow is angle now
@@ -526,7 +526,7 @@ int32_t main(int32_t argc, char **argv)
 
                     angleOfRoad = yellowAngle;
                 }
-                else if (cones_y_b.second.size() >= 1)
+                else if (cones_y_b.second.size() >= 2)
                 {
 
                     std::sort(cones_y_b.second.begin(), cones_y_b.second.end(),
