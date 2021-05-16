@@ -207,6 +207,9 @@ int32_t main(int32_t argc, char **argv)
                 // Lock the shared memory.
                 sharedMemory->lock();
 
+                std::string stringTimeSample;
+                stringTimeSample.append(std::to_string(cluon::time::toMicroseconds(sharedMemory->getTimeStamp().second)));
+
                 // CROP THE IMAGE ---------------------------
 
                 {
@@ -276,7 +279,6 @@ int32_t main(int32_t argc, char **argv)
                 cv::warpPerspective(original, dst, getMatrix(), dst.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
 
                 cv::Mat birdEyeView = dst;
-                const float CLUSTER_RANGE = 100.0;
 
                 // YELLOW
                 std::vector<std::vector<cv::Point>> contours_yel;
@@ -303,28 +305,7 @@ int32_t main(int32_t argc, char **argv)
                     mc_transformed_yel = convertPoints(mc_yel);
                 }
 
-                // check if need to check clusters
-                if (mc_transformed_yel.size() >= 1)
-                {
 
-                    // fix clusters
-                    for (unsigned int i = 0; i < (mc_transformed_yel.size() - 1); i++)
-                    {
-                        float y_value = mc_transformed_yel[i].y - mc_transformed_yel[i + 1].y;
-
-                        if (y_value < CLUSTER_RANGE)
-                        {
-                            float x_value = mc_transformed_yel[i].x - mc_transformed_yel[i + 1].x;
-
-                            if (x_value < CLUSTER_RANGE)
-                            {
-                                // if close, remove then one from the top of the frame
-                                mc_transformed_yel.erase(mc_transformed_yel.begin() + i);
-                                i--;
-                            }
-                        }
-                    }
-                }
                 // Draw contours
                 for (unsigned int i = 0; i < contours_yel.size(); i++)
                 {
@@ -357,28 +338,6 @@ int32_t main(int32_t argc, char **argv)
                     mc_transformed_blue = convertPoints(mc_blue);
                 }
 
-                // check if need to check clusters
-                if (mc_transformed_blue.size() >= 1)
-                {
-
-                    // fix clusters
-                    for (unsigned int i = 0; i < (mc_transformed_blue.size() - 1); i++)
-                    {
-                        float y_value = mc_transformed_blue[i].y - mc_transformed_blue[i + 1].y;
-
-                        if (y_value < CLUSTER_RANGE)
-                        {
-                            float x_value = mc_transformed_blue[i].x - mc_transformed_blue[i + 1].x;
-
-                            if (x_value < CLUSTER_RANGE)
-                            {
-                                // if close, remove then one from the top of the frame
-                                mc_transformed_blue.erase(mc_transformed_blue.begin() + i);
-                                i--;
-                            }
-                        }
-                    }
-                }
 
                 // Draw contours
                 for (unsigned int i = 0; i < contours_blue.size(); i++)
@@ -413,7 +372,7 @@ int32_t main(int32_t argc, char **argv)
                                                std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle;
-                    if (distance < 100)
+                    if (distance < 200)
                     {
                         // Getting the angle in radians
                         float radians =
@@ -451,7 +410,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle2;
-                    if (distance2 < 100)
+                    if (distance2 < 200)
                     {
                         // Getting the angle in radians
                         float radians2 =
@@ -498,7 +457,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle3;
-                    if (distance3 < 100)
+                    if (distance3 < 200)
                     {
                         // Getting the angle in radians
                         float radians3 =
@@ -539,7 +498,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle4;
-                    if (distance4 < 100)
+                    if (distance4 < 200)
                     {
                         // Getting the angle in radians
                         float radians4 =
@@ -637,7 +596,7 @@ int32_t main(int32_t argc, char **argv)
                 std::cout << "time diff= " << time_diff << std::endl;
                 std::cout << "time diff ave= " << allFrames / (turning_total + straight_total) << std::endl;
 
-                std::cout << "group_10;" << cluon::time::toMicroseconds(before) + (cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before)) << ";" << calculated_steeringAngle << std::endl;
+                std::cout << "group_10;" << stringTimeSample << ";" << calculated_steeringAngle << std::endl;
 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
