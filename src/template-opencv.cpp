@@ -134,7 +134,7 @@ int32_t main(int32_t argc, char **argv)
             }
             sharedMemory->unlock();
 
-            float actual_steeringAngle;
+            double actual_steeringAngle;
 
             int minH_y = 6;
             int maxH_y = 30;
@@ -172,18 +172,18 @@ int32_t main(int32_t argc, char **argv)
             cv::Mat masked_blueAndReflection;
             cv::Mat masked_blueWithoutReflection;
 
-            float turning_correct = 0.0;
-            float turning_incorrect = 0.0;
-            float turning_total = 0.0;
-            float straight_total = 0.0;
-            float straight_correct = 0.0;
-            float straight_incorrect = 0.0;
-            float straight_correct_p = 0.0;
-            float turning_correct_p = 0.0;
-            float straight_p = 0.0;
-            float turning_p = 0.0;
-            float total_p = 0.0;
-            float allFrames = 0.0;
+            double turning_correct = 0.0;
+            double turning_incorrect = 0.0;
+            double turning_total = 0.0;
+            double straight_total = 0.0;
+            double straight_correct = 0.0;
+            double straight_incorrect = 0.0;
+            double straight_correct_p = 0.0;
+            double turning_correct_p = 0.0;
+            double straight_p = 0.0;
+            double turning_p = 0.0;
+            double total_p = 0.0;
+            double allFrames = 0.0;
 
             // Endless loop; end the program by pressing Ctrl-C.
             while (od4.isRunning())
@@ -298,8 +298,8 @@ int32_t main(int32_t argc, char **argv)
                 std::vector<cv::Point2f> mc_transformed_yel(contours_yel.size());
                 for (unsigned int i = 0; i < contours_yel.size(); i++)
                 {
-                    mc_yel[i] = cv::Point2f(mu_yel[i].m10 / mu_yel[i].m00,
-                                            mu_yel[i].m01 / mu_yel[i].m00);
+                    mc_yel[i] = cv::Point2f(float(mu_yel[i].m10 / mu_yel[i].m00),
+                                            float(mu_yel[i].m01 / mu_yel[i].m00));
                     mc_yel[i].y = mc_yel[i].y + 240;
 
                     mc_transformed_yel = convertPoints(mc_yel);
@@ -331,8 +331,8 @@ int32_t main(int32_t argc, char **argv)
                 std::vector<cv::Point2f> mc_transformed_blue(contours_blue.size());
                 for (unsigned int i = 0; i < contours_blue.size(); i++)
                 {
-                    mc_blue[i] = cv::Point2f(mu_blue[i].m10 / mu_blue[i].m00,
-                                             mu_blue[i].m01 / mu_blue[i].m00);
+                    mc_blue[i] = cv::Point2f(float(mu_blue[i].m10 / mu_blue[i].m00),
+                                             float(mu_blue[i].m01 / mu_blue[i].m00));
                     mc_blue[i].y = mc_blue[i].y + 240;
                     // Changing perspective to birds-eye view
                     mc_transformed_blue = convertPoints(mc_blue);
@@ -353,9 +353,9 @@ int32_t main(int32_t argc, char **argv)
                     cones_y_b = contours_y_b;
                 //--------------------------------------------------this is the start of calculating angles --------------------------------
 
-                float angleOfRoad = 0.0;
-                float yellowAngle = 0.0;
-                float blueAngle = 0.0;
+                double angleOfRoad = 0.0;
+                double yellowAngle = 0.0;
+                double blueAngle = 0.0;
 
                 // If there are at least 2 blue and 2 yellow cones
                 if ((cones_y_b.first.size() >= 2) && (cones_y_b.second.size() >= 2))
@@ -368,21 +368,21 @@ int32_t main(int32_t argc, char **argv)
                                   return a.y > b.y; // Sorting in order from highest to lowest
                               });
 
-                    float distance = std::sqrt(std::pow(cones_y_b.first[0].x - X_POSITION_OF_CAR, 2) +
+                    double distance = std::sqrt(std::pow(cones_y_b.first[0].x - X_POSITION_OF_CAR, 2) +
                                                std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
-                    float angle;
+                    double angle;
                     if (distance < 200)
                     {
                         // Getting the angle in radians
-                        float radians =
+                        double radians =
                             std::atan2(cones_y_b.first[0].y - cones_y_b.first[1].y, cones_y_b.first[0].x - cones_y_b.first[1].x);
 
                         // Converting to degrees
-                        float degrees = radians * 180 / PI;
+                        double degrees = radians * 180 / PI;
 
                         // Adjusting so the value is measured from right x axis
-                        float adjusted = 180 - degrees;
+                        double adjusted = 180 - degrees;
 
                         if (adjusted > 60 && adjusted < 120)
                         {
@@ -406,21 +406,21 @@ int32_t main(int32_t argc, char **argv)
                                   return a.y > b.y; // Sorting in order from highest to lowest
                               });
 
-                    float distance2 = std::sqrt(std::pow(cones_y_b.second[0].x - X_POSITION_OF_CAR, 2) +
+                    double distance2 = std::sqrt(std::pow(cones_y_b.second[0].x - X_POSITION_OF_CAR, 2) +
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
-                    float angle2;
+                    double angle2;
                     if (distance2 < 200)
                     {
                         // Getting the angle in radians
-                        float radians2 =
+                        double radians2 =
                             std::atan2(cones_y_b.second[0].y - cones_y_b.second[1].y, cones_y_b.second[0].x - cones_y_b.second[1].x);
 
                         // Converting to degrees
-                        float degrees2 = radians2 * 180 / PI;
+                        double degrees2 = radians2 * 180 / PI;
 
                         // Adjusting so the value is measured from right x axis
-                        float adjusted2 = 180 - degrees2;
+                        double adjusted2 = 180 - degrees2;
 
                         if (adjusted2 > 60 && adjusted2 < 120)
                         {
@@ -440,7 +440,7 @@ int32_t main(int32_t argc, char **argv)
                     //----------------find mean
 
                     // Taking the mean value of the found angles
-                    float meanAngle = (yellowAngle + blueAngle) / 2;
+                    double meanAngle = (yellowAngle + blueAngle) / 2;
                     angleOfRoad = meanAngle;
                 }
                 else if (cones_y_b.first.size() >= 2)
@@ -453,21 +453,21 @@ int32_t main(int32_t argc, char **argv)
                                   return a.y > b.y; // Sorting in order from highest to lowest
                               });
 
-                    float distance3 = std::sqrt(std::pow(cones_y_b.first[0].x - X_POSITION_OF_CAR, 2) +
+                    double distance3 = std::sqrt(std::pow(cones_y_b.first[0].x - X_POSITION_OF_CAR, 2) +
                                                 std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
-                    float angle3;
+                    double angle3;
                     if (distance3 < 200)
                     {
                         // Getting the angle in radians
-                        float radians3 =
+                        double radians3 =
                             std::atan2(cones_y_b.first[0].y - cones_y_b.first[1].y, cones_y_b.first[0].x - cones_y_b.first[1].x);
 
                         // Converting to degrees
-                        float degrees3 = radians3 * 180 / PI;
+                        double degrees3 = radians3 * 180 / PI;
 
                         // Adjusting so the value is measured from right x axis
-                        float adjusted3 = 180 - degrees3;
+                        double adjusted3 = 180 - degrees3;
 
                         if (adjusted3 > 60 && adjusted3 < 120)
                         {
@@ -494,21 +494,21 @@ int32_t main(int32_t argc, char **argv)
                                   return a.y > b.y; // Sorting in order from highest to lowest
                               });
 
-                    float distance4 = std::sqrt(std::pow(cones_y_b.second[0].x - X_POSITION_OF_CAR, 2) +
+                    double distance4 = std::sqrt(std::pow(cones_y_b.second[0].x - X_POSITION_OF_CAR, 2) +
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
-                    float angle4;
+                    double angle4;
                     if (distance4 < 200)
                     {
                         // Getting the angle in radians
-                        float radians4 =
+                        double radians4 =
                             std::atan2(cones_y_b.second[0].y - cones_y_b.second[1].y, cones_y_b.second[0].x - cones_y_b.second[1].x);
 
                         // Converting to degrees
-                        float degrees4 = radians4 * 180 / PI;
+                        double degrees4 = radians4 * 180 / PI;
 
                         // Adjusting so the value is measured from right x axis
-                        float adjusted4 = 180 - degrees4;
+                        double adjusted4 = 180 - degrees4;
 
                         if (adjusted4 > 60 && adjusted4 < 120)
                         {
@@ -535,7 +535,7 @@ int32_t main(int32_t argc, char **argv)
 
                 // Steering angle starts here --------------------------------------
 
-                float calculated_steeringAngle;
+                double calculated_steeringAngle;
 
                 // after reverse engingeering the groundsteering requests we find out that the ground steering request that are less than 80 degrees means we can send ground steering request
                 if ((angleOfRoad < 90) || (angleOfRoad > 90))
@@ -549,7 +549,7 @@ int32_t main(int32_t argc, char **argv)
                     calculated_steeringAngle = 0;
                 }
 
-                if (actual_steeringAngle == 0)
+                if (actual_steeringAngle >= 0 && actual_steeringAngle <= 0)
                 {
                     straight_total += 1.0;
                     if ((calculated_steeringAngle > (actual_steeringAngle * 1.05)) || (calculated_steeringAngle < (actual_steeringAngle * 0.95)))
@@ -589,7 +589,7 @@ int32_t main(int32_t argc, char **argv)
                 
                 cluon::data::TimeStamp after{cluon::time::now()};
 
-                float time_diff = cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before);
+                double time_diff = cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before);
 
                 allFrames += time_diff;
 
