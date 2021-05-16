@@ -276,7 +276,6 @@ int32_t main(int32_t argc, char **argv)
                 cv::warpPerspective(original, dst, getMatrix(), dst.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
 
                 cv::Mat birdEyeView = dst;
-                const float CLUSTER_RANGE = 100.0;
 
                 // YELLOW
                 std::vector<std::vector<cv::Point>> contours_yel;
@@ -303,28 +302,7 @@ int32_t main(int32_t argc, char **argv)
                     mc_transformed_yel = convertPoints(mc_yel);
                 }
 
-                // check if need to check clusters
-                if (mc_transformed_yel.size() >= 1)
-                {
 
-                    // fix clusters
-                    for (unsigned int i = 0; i < (mc_transformed_yel.size() - 1); i++)
-                    {
-                        float y_value = mc_transformed_yel[i].y - mc_transformed_yel[i + 1].y;
-
-                        if (y_value < CLUSTER_RANGE)
-                        {
-                            float x_value = mc_transformed_yel[i].x - mc_transformed_yel[i + 1].x;
-
-                            if (x_value < CLUSTER_RANGE)
-                            {
-                                // if close, remove then one from the top of the frame
-                                mc_transformed_yel.erase(mc_transformed_yel.begin() + i);
-                                i--;
-                            }
-                        }
-                    }
-                }
                 // Draw contours
                 for (unsigned int i = 0; i < contours_yel.size(); i++)
                 {
@@ -357,28 +335,6 @@ int32_t main(int32_t argc, char **argv)
                     mc_transformed_blue = convertPoints(mc_blue);
                 }
 
-                // check if need to check clusters
-                if (mc_transformed_blue.size() >= 1)
-                {
-
-                    // fix clusters
-                    for (unsigned int i = 0; i < (mc_transformed_blue.size() - 1); i++)
-                    {
-                        float y_value = mc_transformed_blue[i].y - mc_transformed_blue[i + 1].y;
-
-                        if (y_value < CLUSTER_RANGE)
-                        {
-                            float x_value = mc_transformed_blue[i].x - mc_transformed_blue[i + 1].x;
-
-                            if (x_value < CLUSTER_RANGE)
-                            {
-                                // if close, remove then one from the top of the frame
-                                mc_transformed_blue.erase(mc_transformed_blue.begin() + i);
-                                i--;
-                            }
-                        }
-                    }
-                }
 
                 // Draw contours
                 for (unsigned int i = 0; i < contours_blue.size(); i++)
