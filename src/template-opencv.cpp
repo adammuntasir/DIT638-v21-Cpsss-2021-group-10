@@ -369,7 +369,7 @@ int32_t main(int32_t argc, char **argv)
                                                std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle;
-                    if (distance < 100)
+                    if (distance < 200)
                     {
                         // Getting the angle in radians
                         float radians =
@@ -407,7 +407,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle2;
-                    if (distance2 < 100)
+                    if (distance2 < 200)
                     {
                         // Getting the angle in radians
                         float radians2 =
@@ -454,7 +454,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle3;
-                    if (distance3 < 100)
+                    if (distance3 < 200)
                     {
                         // Getting the angle in radians
                         float radians3 =
@@ -495,7 +495,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle4;
-                    if (distance4 < 100)
+                    if (distance4 < 200)
                     {
                         // Getting the angle in radians
                         float radians4 =
