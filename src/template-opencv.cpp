@@ -207,6 +207,9 @@ int32_t main(int32_t argc, char **argv)
                 // Lock the shared memory.
                 sharedMemory->lock();
 
+                std::string stringTimeSample;
+                stringTimeSample.append(std::to_string(cluon::time::toMicroseconds(sharedMemory->getTimeStamp().second)));
+
                 // CROP THE IMAGE ---------------------------
 
                 {
@@ -593,7 +596,7 @@ int32_t main(int32_t argc, char **argv)
                 std::cout << "time diff= " << time_diff << std::endl;
                 std::cout << "time diff ave= " << allFrames / (turning_total + straight_total) << std::endl;
 
-                std::cout << "group_10;" << cluon::time::toMicroseconds(before) + (cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before)) << ";" << calculated_steeringAngle << std::endl;
+                std::cout << "group_10;" << stringTimeSample << ";" << calculated_steeringAngle << std::endl;
 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
