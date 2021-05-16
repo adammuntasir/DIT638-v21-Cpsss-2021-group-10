@@ -217,7 +217,7 @@ int32_t main(int32_t argc, char **argv)
 
                     img = cv::cvarrToMat(iplimage);
 
-                    cropped = img(cv::Rect(0, img.rows / 2, img.cols, 160));
+                    cropped = img(cv::Rect(0, img.rows / 2, img.cols, 120));
                 }
                 cv::cvtColor(cropped, colouredImg, CV_BGR2HSV);
 
@@ -265,6 +265,7 @@ int32_t main(int32_t argc, char **argv)
                 cv::bitwise_or(reducedImg.second, reducedImg.first, combined_masks);
 
                 cv::GaussianBlur(combined_masks, resultAfterBlur, cv::Size(15, 15), 0);
+                cv::imshow("contours", resultAfterBlur);
 
                 cv::Mat dst(480, 640, CV_8UC3);
 
@@ -398,7 +399,7 @@ int32_t main(int32_t argc, char **argv)
                 float blueAngle = 0.0;
 
                 // If there are at least 2 blue and 2 yellow cones
-                if ((cones_y_b.first.size() >= 1) && (cones_y_b.second.size() >= 1))
+                if ((cones_y_b.first.size() >= 2) && (cones_y_b.second.size() >= 2))
                 {
 
                     //-------------------yellow  angle
@@ -412,7 +413,7 @@ int32_t main(int32_t argc, char **argv)
                                                std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle;
-                    if (distance < 50)
+                    if (distance < 100)
                     {
                         // Getting the angle in radians
                         float radians =
@@ -450,7 +451,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle2;
-                    if (distance2 < 50)
+                    if (distance2 < 100)
                     {
                         // Getting the angle in radians
                         float radians2 =
@@ -483,7 +484,7 @@ int32_t main(int32_t argc, char **argv)
                     float meanAngle = (yellowAngle + blueAngle) / 2;
                     angleOfRoad = meanAngle;
                 }
-                else if (cones_y_b.first.size() >= 1)
+                else if (cones_y_b.first.size() >= 2)
                 {
 
                     //------------yellow is angle now
@@ -497,7 +498,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle3;
-                    if (distance3 < 50)
+                    if (distance3 < 100)
                     {
                         // Getting the angle in radians
                         float radians3 =
@@ -526,7 +527,7 @@ int32_t main(int32_t argc, char **argv)
 
                     angleOfRoad = yellowAngle;
                 }
-                else if (cones_y_b.second.size() >= 1)
+                else if (cones_y_b.second.size() >= 2)
                 {
 
                     std::sort(cones_y_b.second.begin(), cones_y_b.second.end(),
@@ -538,7 +539,7 @@ int32_t main(int32_t argc, char **argv)
                                                 std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     float angle4;
-                    if (distance4 < 50)
+                    if (distance4 < 100)
                     {
                         // Getting the angle in radians
                         float radians4 =
@@ -619,24 +620,24 @@ int32_t main(int32_t argc, char **argv)
                 straight_p = (straight_total / (turning_total + straight_total)) * 100;
                 turning_p = (turning_total / (turning_total + straight_total)) * 100;
                 total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) / 100;
-                /*
+                
                 std::cout << "Correct 0 is " << straight_correct_p << std::endl;
                 std::cout << "Correct turn is " << turning_correct_p << std::endl;
                 std::cout << "straight total is " << straight_p << std::endl;
                 std::cout << "turning total is " << turning_p << std::endl;
                 std::cout << "Correct total is " << total_p << std::endl;
                 std::cout << "nr of frames " << turning_total + straight_total << std::endl;
-                */
+                
                 cluon::data::TimeStamp after{cluon::time::now()};
 
                 float time_diff = cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before);
 
                 allFrames += time_diff;
 
-                // std::cout << "time diff= " << time_diff << std::endl;
-                // std::cout << "time diff ave= " << allFrames / 367 << std::endl;
+                std::cout << "time diff= " << time_diff << std::endl;
+                std::cout << "time diff ave= " << allFrames / (turning_total + straight_total) << std::endl;
 
-                std::cout << "group_06;" << cluon::time::toMicroseconds(before) + (cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before)) << ";" << calculated_steeringAngle << std::endl;
+                std::cout << "group_10;" << cluon::time::toMicroseconds(before) + (cluon::time::toMicroseconds(after) - cluon::time::toMicroseconds(before)) << ";" << calculated_steeringAngle << std::endl;
 
                 // If you want to access the latest received ground steering, don't forget to lock the mutex:
                 {
