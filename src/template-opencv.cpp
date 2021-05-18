@@ -73,6 +73,252 @@ std::vector<cv::Point2f> convertPoints(std::vector<cv::Point2f> coordinates)
     return dst_points;
 }
 
+double calculateAngleOfRoad(std::vector<cv::Point2f> cones_y_b){
+
+                    std::sort(cones_y_b.begin(), cones_y_b.end(),
+                              [](const cv::Point2f &a, const cv::Point2f &b) {
+                                  return a.y > b.y; // Sorting in order from highest to lowest
+                              });
+
+                    double distance = std::sqrt(std::pow(cones_y_b[0].x - X_POSITION_OF_CAR, 2) +
+                                               std::pow(cones_y_b[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
+
+                    double angle;
+                    if (distance < 200)
+                    {
+                        // Getting the angle in radians
+                        double radians =
+                            std::atan2(cones_y_b[0].y - cones_y_b[1].y, cones_y_b[0].x - cones_y_b[1].x);
+
+                        // Converting to degrees
+                        double degrees = radians * 180 / PI;
+
+                        // Adjusting so the value is measured from right x axis
+                        double adjusted = 180 - degrees;
+
+                        if (adjusted > 60 && adjusted < 120)
+                        {
+                            angle = 90;
+                        }
+                        else
+                        {
+                            angle = adjusted;
+                        }
+                    }
+                    else
+                    {
+                        angle = 90;
+                    }
+
+                    return angle;
+}
+
+double calculateSteeringAngle(std::pair<std::vector<cv::Point2f>, std::vector<cv::Point2f>> cones_y_b){
+                double angleOfRoad = 0.0;
+                double yellowAngle = 0.0;
+                double blueAngle = 0.0;
+
+                // If there are at least 2 blue and 2 yellow cones
+                if ((cones_y_b.first.size() >= 2) && (cones_y_b.second.size() >= 2))
+                {
+
+                
+                    //-------------------yellow  angle
+
+
+                    yellowAngle = calculateAngleOfRoad(cones_y_b.first);
+
+                    //-------------------blue angle
+
+                    
+                    blueAngle = calculateAngleOfRoad(cones_y_b.second);
+
+                    //----------------find mean
+
+                    // Taking the mean value of the found angles
+                    double meanAngle = (yellowAngle + blueAngle) / 2;
+                    angleOfRoad = meanAngle;
+                }
+                else if (cones_y_b.first.size() >= 2)
+                {
+
+                    //------------yellow is angle now
+
+                    yellowAngle = calculateAngleOfRoad(cones_y_b.first);
+
+                    angleOfRoad = yellowAngle;
+                }
+                else if (cones_y_b.second.size() >= 2)
+                {
+
+                    blueAngle = calculateAngleOfRoad(cones_y_b.second);
+
+                    angleOfRoad = blueAngle;
+                }
+                else
+                {
+
+                    angleOfRoad = 90;
+                }
+
+                //--------------------------------------------------this is the end of calculating angles--------------------------------
+
+                // Steering angle starts here --------------------------------------
+
+                double calculated_steeringAngle;
+
+                // after reverse engingeering the groundsteering requests we find out that the ground steering request that are less than 80 degrees means we can send ground steering request
+                if ((angleOfRoad < 90) || (angleOfRoad > 90))
+                {
+
+                    // Getting a value between 0 and 0.6 based on the angle
+                    calculated_steeringAngle = ((angleOfRoad)*0.003333) - 0.3;
+                }
+                else
+                {
+                    calculated_steeringAngle = 0.0;
+                }
+
+                return calculated_steeringAngle;
+}
+
+std::vector<cv::Point2f> drawContours(cv::Mat birdEyeView, cv::Mat reducedImg){
+    // YELLOW
+                std::vector<std::vector<cv::Point>> contours;
+                std::vector<cv::Vec4i> hierarchy;
+                cv::findContours(reducedImg, contours, hierarchy, CV_RETR_TREE,
+                                 CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+
+                // Get the moments
+                std::vector<cv::Moments> mu(contours.size());
+                for (unsigned int i = 0; i < contours.size(); i++)
+                {
+                    mu[i] = moments(contours[i], false);
+                }
+
+                // Get the mass centers:
+                std::vector<cv::Point2f> mc(contours.size());
+                std::vector<cv::Point2f> mc_transformed(contours.size());
+                for (unsigned int i = 0; i < contours.size(); i++)
+                {
+                    mc[i] = cv::Point2f(float(mu[i].m10 / mu[i].m00),
+                                            float(mu[i].m01 / mu[i].m00));
+                    mc[i].y = mc[i].y + 240;
+
+                    mc_transformed = convertPoints(mc);
+                }
+
+
+                // Draw contours
+                for (unsigned int i = 0; i < contours.size(); i++)
+                {
+                    cv::circle(birdEyeView, mc_transformed[i], 10, cv::Scalar(0, 0, 255), 1,
+                               CV_AA, 0);
+                }
+
+                return mc_transformed;
+}
+
+
+std::pair<cv::Mat, cv::Mat> reduceImage(std::pair<cv::Mat, cv::Mat> masked_y_b){
+
+    std::pair<cv::Mat, cv::Mat> reducedImg;
+
+                cv::dilate(masked_y_b.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
+                cv::erode(reducedImg.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(6, 6)));
+
+                cv::dilate(masked_y_b.second, reducedImg.second, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7)));
+
+
+                //cv::Mat combined_masks;
+                //cv::Mat resultAfterBlur;
+
+                //cv::bitwise_or(reducedImg.second, reducedImg.first, combined_masks);
+
+                cv::GaussianBlur(reducedImg.first, reducedImg.first, cv::Size(15, 15), 0);
+                cv::GaussianBlur(reducedImg.second, reducedImg.second, cv::Size(15, 15), 0);
+
+                return reducedImg;
+
+}
+
+
+std::pair<cv::Mat, cv::Mat> maskCones(cv::Mat cropped){
+    
+
+                int minH_y = 6;
+            int maxH_y = 30;
+
+            int minS_y = 51;
+            int maxS_y = 235;
+
+            int minV_y = 75;
+            int maxV_y = 255;
+
+            int minH_b = 106;
+            int maxH_b = 155;
+
+            int minS_b = 59;
+            int maxS_b = 255;
+
+            int minV_b = 29;
+            int maxV_b = 255;
+
+            int minH_b_reflection = 121;
+            int maxH_b_reflection = 179;
+
+            int minS_b_reflection = 0;
+            int maxS_b_reflection = 98;
+
+            int minV_b_reflection = 0;
+            int maxV_b_reflection = 255;
+
+            
+
+            cv::Mat masked_y;
+            cv::Mat masked_b;
+            cv::Mat colouredImg;
+            cv::Mat blueImg;
+            cv::Mat blueReflectionImg;
+            cv::Mat masked_reflection;
+            cv::Mat masked_blueAndReflection;
+            cv::Mat masked_blueWithoutReflection;
+
+            cv::cvtColor(cropped, colouredImg, CV_BGR2HSV);
+
+                // Colour process to detect yellow cones
+                cv::inRange(colouredImg, cv::Scalar(minH_y, minS_y, minV_y),
+                            cv::Scalar(maxH_y, maxS_y, maxV_y),
+                            masked_y);
+
+                // Colour process to detect blue cones
+                cv::inRange(colouredImg, cv::Scalar(minH_b, minS_b, minV_b),
+                            cv::Scalar(maxH_b, maxS_b, maxV_b), masked_b);
+
+                // Colour process to detect large reflections
+                cv::inRange(
+                    colouredImg,
+                    cv::Scalar(minH_b_reflection, minS_b_reflection, minV_b_reflection),
+                    cv::Scalar(maxH_b_reflection, maxS_b_reflection,
+                               maxV_b_reflection),
+                    masked_reflection);
+
+                
+
+                // Use bitwise AND operator to find reflections in blue cone image
+                cv::bitwise_and(masked_b, masked_reflection, masked_blueAndReflection);
+
+
+                // Use bitwise XOR operator to remove found reflections from blue cone image
+                cv::bitwise_xor(masked_blueAndReflection, masked_b, masked_blueWithoutReflection);
+
+                std::pair<cv::Mat, cv::Mat> masked_y_b = std::make_pair(masked_y, masked_blueWithoutReflection);
+
+                return masked_y_b;
+
+}
+
+
 int32_t main(int32_t argc, char **argv)
 {
     int32_t retCode{1};
@@ -136,42 +382,6 @@ int32_t main(int32_t argc, char **argv)
 
             double actual_steeringAngle;
 
-            int minH_y = 6;
-            int maxH_y = 30;
-
-            int minS_y = 51;
-            int maxS_y = 235;
-
-            int minV_y = 75;
-            int maxV_y = 255;
-
-            int minH_b = 106;
-            int maxH_b = 155;
-
-            int minS_b = 59;
-            int maxS_b = 255;
-
-            int minV_b = 29;
-            int maxV_b = 255;
-
-            int minH_b_reflection = 121;
-            int maxH_b_reflection = 179;
-
-            int minS_b_reflection = 0;
-            int maxS_b_reflection = 98;
-
-            int minV_b_reflection = 0;
-            int maxV_b_reflection = 255;
-
-            cv::Mat masked_y;
-            cv::Mat masked_b;
-            cv::Mat colouredImg;
-            cv::Mat blueImg;
-            cv::Mat blueReflectionImg;
-            cv::Mat masked_reflection;
-            cv::Mat masked_blueAndReflection;
-            cv::Mat masked_blueWithoutReflection;
-
             double turning_correct = 0.0;
             double turning_incorrect = 0.0;
             double turning_total = 0.0;
@@ -222,53 +432,14 @@ int32_t main(int32_t argc, char **argv)
 
                     cropped = img(cv::Rect(0, img.rows / 2, img.cols, 120));
                 }
-                cv::cvtColor(cropped, colouredImg, CV_BGR2HSV);
-
-                // Colour process to detect yellow cones
-                cv::inRange(colouredImg, cv::Scalar(minH_y, minS_y, minV_y),
-                            cv::Scalar(maxH_y, maxS_y, maxV_y),
-                            masked_y);
-
-                // Colour process to detect blue cones
-                cv::inRange(colouredImg, cv::Scalar(minH_b, minS_b, minV_b),
-                            cv::Scalar(maxH_b, maxS_b, maxV_b), masked_b);
-
-                // Colour process to detect large reflections
-                cv::inRange(
-                    colouredImg,
-                    cv::Scalar(minH_b_reflection, minS_b_reflection, minV_b_reflection),
-                    cv::Scalar(maxH_b_reflection, maxS_b_reflection,
-                               maxV_b_reflection),
-                    masked_reflection);
-
-                // Use bitwise AND operator to find reflections in blue cone image
-                cv::bitwise_and(masked_b, masked_reflection, masked_blueAndReflection);
-
-                // Use bitwise XOR operator to remove found reflections from blue cone image
-                cv::bitwise_xor(masked_blueAndReflection, masked_b, masked_blueWithoutReflection);
-
-                std::pair<cv::Mat, cv::Mat> masked_y_b =
-                    std::make_pair(masked_y, masked_blueWithoutReflection);
-
-                // TODO: Here, you can add some code to check the sampleTimePoint when the current frame was captured.
                 sharedMemory->unlock();
+
+                std::pair<cv::Mat, cv::Mat> masked_y_b = maskCones(cropped);
+    
 
                 // DETECT CONES ---------------------------
 
-                std::pair<cv::Mat, cv::Mat> reducedImg;
-
-                //cv::dilate(masked_y_b.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
-                cv::erode(masked_y_b.first, reducedImg.first, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(6, 6)));
-
-                cv::dilate(masked_y_b.second, reducedImg.second, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7)));
-
-                cv::Mat combined_masks;
-                cv::Mat resultAfterBlur;
-
-                cv::bitwise_or(reducedImg.second, reducedImg.first, combined_masks);
-
-                cv::GaussianBlur(combined_masks, resultAfterBlur, cv::Size(15, 15), 0);
-                cv::imshow("contours", resultAfterBlur);
+                std::pair<cv::Mat, cv::Mat> reducedImg = reduceImage(masked_y_b);
 
                 cv::Mat dst(480, 640, CV_8UC3);
 
@@ -280,274 +451,19 @@ int32_t main(int32_t argc, char **argv)
 
                 cv::Mat birdEyeView = dst;
 
-                // YELLOW
-                std::vector<std::vector<cv::Point>> contours_yel;
-                std::vector<cv::Vec4i> hierarchy_yel;
-                cv::findContours(reducedImg.first, contours_yel, hierarchy_yel, CV_RETR_TREE,
-                                 CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
+                std::vector<cv::Point2f> mc_transformed_yel = drawContours(birdEyeView, reducedImg.first);
+                std::vector<cv::Point2f> mc_transformed_blue = drawContours(birdEyeView, reducedImg.second);
 
-                // Get the moments
-                std::vector<cv::Moments> mu_yel(contours_yel.size());
-                for (unsigned int i = 0; i < contours_yel.size(); i++)
-                {
-                    mu_yel[i] = moments(contours_yel[i], false);
-                }
-
-                // Get the mass centers:
-                std::vector<cv::Point2f> mc_yel(contours_yel.size());
-                std::vector<cv::Point2f> mc_transformed_yel(contours_yel.size());
-                for (unsigned int i = 0; i < contours_yel.size(); i++)
-                {
-                    mc_yel[i] = cv::Point2f(float(mu_yel[i].m10 / mu_yel[i].m00),
-                                            float(mu_yel[i].m01 / mu_yel[i].m00));
-                    mc_yel[i].y = mc_yel[i].y + 240;
-
-                    mc_transformed_yel = convertPoints(mc_yel);
-                }
-
-
-                // Draw contours
-                for (unsigned int i = 0; i < contours_yel.size(); i++)
-                {
-                    cv::circle(birdEyeView, mc_transformed_yel[i], 10, cv::Scalar(0, 0, 255), 1,
-                               CV_AA, 0);
-                }
-
-                // BLUE
-                std::vector<std::vector<cv::Point>> contours_blue;
-                std::vector<cv::Vec4i> hierarchy_blue;
-                cv::findContours(reducedImg.second, contours_blue, hierarchy_blue, CV_RETR_TREE,
-                                 CV_CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
-
-                // Get the moments
-                std::vector<cv::Moments> mu_blue(contours_blue.size());
-                for (unsigned int i = 0; i < contours_blue.size(); i++)
-                {
-                    mu_blue[i] = moments(contours_blue[i], false);
-                }
-
-                //  Get the mass centers:
-                std::vector<cv::Point2f> mc_blue(contours_blue.size());
-                std::vector<cv::Point2f> mc_transformed_blue(contours_blue.size());
-                for (unsigned int i = 0; i < contours_blue.size(); i++)
-                {
-                    mc_blue[i] = cv::Point2f(float(mu_blue[i].m10 / mu_blue[i].m00),
-                                             float(mu_blue[i].m01 / mu_blue[i].m00));
-                    mc_blue[i].y = mc_blue[i].y + 240;
-                    // Changing perspective to birds-eye view
-                    mc_transformed_blue = convertPoints(mc_blue);
-                }
-
-
-                // Draw contours
-                for (unsigned int i = 0; i < contours_blue.size(); i++)
-                {
-                    cv::circle(birdEyeView, mc_transformed_blue[i], 10, cv::Scalar(0, 0, 255),
-                               1, CV_AA, 0);
-                }
 
                 std::pair<std::vector<cv::Point2f>, std::vector<cv::Point2f>> contours_y_b =
                     std::make_pair(mc_transformed_yel, mc_transformed_blue);
 
                 std::pair<std::vector<cv::Point2f>, std::vector<cv::Point2f>>
                     cones_y_b = contours_y_b;
+
                 //--------------------------------------------------this is the start of calculating angles --------------------------------
 
-                double angleOfRoad = 0.0;
-                double yellowAngle = 0.0;
-                double blueAngle = 0.0;
-
-                // If there are at least 2 blue and 2 yellow cones
-                if ((cones_y_b.first.size() >= 2) && (cones_y_b.second.size() >= 2))
-                {
-
-                    //-------------------yellow  angle
-
-                    std::sort(cones_y_b.first.begin(), cones_y_b.first.end(),
-                              [](const cv::Point2f &a, const cv::Point2f &b) {
-                                  return a.y > b.y; // Sorting in order from highest to lowest
-                              });
-
-                    double distance = std::sqrt(std::pow(cones_y_b.first[0].x - X_POSITION_OF_CAR, 2) +
-                                               std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
-
-                    double angle;
-                    if (distance < 200)
-                    {
-                        // Getting the angle in radians
-                        double radians =
-                            std::atan2(cones_y_b.first[0].y - cones_y_b.first[1].y, cones_y_b.first[0].x - cones_y_b.first[1].x);
-
-                        // Converting to degrees
-                        double degrees = radians * 180 / PI;
-
-                        // Adjusting so the value is measured from right x axis
-                        double adjusted = 180 - degrees;
-
-                        if (adjusted > 60 && adjusted < 120)
-                        {
-                            angle = 90;
-                        }
-                        else
-                        {
-                            angle = adjusted;
-                        }
-                    }
-                    else
-                    {
-                        angle = 90;
-                    }
-                    yellowAngle = angle;
-
-                    //-------------------blue angle
-
-                    std::sort(cones_y_b.second.begin(), cones_y_b.second.end(),
-                              [](const cv::Point2f &a, const cv::Point2f &b) {
-                                  return a.y > b.y; // Sorting in order from highest to lowest
-                              });
-
-                    double distance2 = std::sqrt(std::pow(cones_y_b.second[0].x - X_POSITION_OF_CAR, 2) +
-                                                std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
-
-                    double angle2;
-                    if (distance2 < 200)
-                    {
-                        // Getting the angle in radians
-                        double radians2 =
-                            std::atan2(cones_y_b.second[0].y - cones_y_b.second[1].y, cones_y_b.second[0].x - cones_y_b.second[1].x);
-
-                        // Converting to degrees
-                        double degrees2 = radians2 * 180 / PI;
-
-                        // Adjusting so the value is measured from right x axis
-                        double adjusted2 = 180 - degrees2;
-
-                        if (adjusted2 > 60 && adjusted2 < 120)
-                        {
-                            angle2 = 90;
-                        }
-                        else
-                        {
-                            angle2 = adjusted2;
-                        }
-                    }
-                    else
-                    {
-                        angle2 = 90;
-                    }
-                    blueAngle = angle2;
-
-                    //----------------find mean
-
-                    // Taking the mean value of the found angles
-                    double meanAngle = (yellowAngle + blueAngle) / 2;
-                    angleOfRoad = meanAngle;
-                }
-                else if (cones_y_b.first.size() >= 2)
-                {
-
-                    //------------yellow is angle now
-
-                    std::sort(cones_y_b.first.begin(), cones_y_b.first.end(),
-                              [](const cv::Point2f &a, const cv::Point2f &b) {
-                                  return a.y > b.y; // Sorting in order from highest to lowest
-                              });
-
-                    double distance3 = std::sqrt(std::pow(cones_y_b.first[0].x - X_POSITION_OF_CAR, 2) +
-                                                std::pow(cones_y_b.first[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
-
-                    double angle3;
-                    if (distance3 < 200)
-                    {
-                        // Getting the angle in radians
-                        double radians3 =
-                            std::atan2(cones_y_b.first[0].y - cones_y_b.first[1].y, cones_y_b.first[0].x - cones_y_b.first[1].x);
-
-                        // Converting to degrees
-                        double degrees3 = radians3 * 180 / PI;
-
-                        // Adjusting so the value is measured from right x axis
-                        double adjusted3 = 180 - degrees3;
-
-                        if (adjusted3 > 60 && adjusted3 < 120)
-                        {
-                            angle3 = 90;
-                        }
-                        else
-                        {
-                            angle3 = adjusted3;
-                        }
-                    }
-                    else
-                    {
-                        angle3 = 90;
-                    }
-                    yellowAngle = angle3;
-
-                    angleOfRoad = yellowAngle;
-                }
-                else if (cones_y_b.second.size() >= 2)
-                {
-
-                    std::sort(cones_y_b.second.begin(), cones_y_b.second.end(),
-                              [](const cv::Point2f &a, const cv::Point2f &b) {
-                                  return a.y > b.y; // Sorting in order from highest to lowest
-                              });
-
-                    double distance4 = std::sqrt(std::pow(cones_y_b.second[0].x - X_POSITION_OF_CAR, 2) +
-                                                std::pow(cones_y_b.second[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
-
-                    double angle4;
-                    if (distance4 < 200)
-                    {
-                        // Getting the angle in radians
-                        double radians4 =
-                            std::atan2(cones_y_b.second[0].y - cones_y_b.second[1].y, cones_y_b.second[0].x - cones_y_b.second[1].x);
-
-                        // Converting to degrees
-                        double degrees4 = radians4 * 180 / PI;
-
-                        // Adjusting so the value is measured from right x axis
-                        double adjusted4 = 180 - degrees4;
-
-                        if (adjusted4 > 60 && adjusted4 < 120)
-                        {
-                            angle4 = 90;
-                        }
-                        else
-                        {
-                            angle4 = adjusted4;
-                        }
-                    }
-                    else
-                    {
-                        angle4 = 90;
-                    }
-                    blueAngle = angle4;
-
-                    angleOfRoad = blueAngle;
-                }
-                else
-                {
-
-                    angleOfRoad = 90;
-                }
-
-                // Steering angle starts here --------------------------------------
-
-                double calculated_steeringAngle;
-
-                // after reverse engingeering the groundsteering requests we find out that the ground steering request that are less than 80 degrees means we can send ground steering request
-                if ((angleOfRoad < 90) || (angleOfRoad > 90))
-                {
-
-                    // Getting a value between 0 and 0.6 based on the angle
-                    calculated_steeringAngle = ((angleOfRoad)*0.003333) - 0.3;
-                }
-                else
-                {
-                    calculated_steeringAngle = 0;
-                }
+                double calculated_steeringAngle = calculateSteeringAngle(cones_y_b);
 
                 if (actual_steeringAngle >= 0 && actual_steeringAngle <= 0)
                 {
@@ -580,12 +496,12 @@ int32_t main(int32_t argc, char **argv)
                 turning_p = (turning_total / (turning_total + straight_total)) * 100;
                 total_p = ((straight_correct_p * straight_p) + (turning_correct_p * turning_p)) / 100;
                 
-                std::cout << "Correct 0 is " << straight_correct_p << std::endl;
-                std::cout << "Correct turn is " << turning_correct_p << std::endl;
-                std::cout << "straight total is " << straight_p << std::endl;
-                std::cout << "turning total is " << turning_p << std::endl;
-                std::cout << "Correct total is " << total_p << std::endl;
-                std::cout << "nr of frames " << turning_total + straight_total << std::endl;
+                //std::cout << "Correct 0 is " << straight_correct_p << std::endl;
+                //std::cout << "Correct turn is " << turning_correct_p << std::endl;
+                //std::cout << "straight total is " << straight_p << std::endl;
+                //std::cout << "turning total is " << turning_p << std::endl;
+                //std::cout << "Correct total is " << total_p << std::endl;
+                //std::cout << "nr of frames " << turning_total + straight_total << std::endl;
                 
                 cluon::data::TimeStamp after{cluon::time::now()};
 
@@ -593,8 +509,8 @@ int32_t main(int32_t argc, char **argv)
 
                 allFrames += time_diff;
 
-                std::cout << "time diff= " << time_diff << std::endl;
-                std::cout << "time diff ave= " << allFrames / (turning_total + straight_total) << std::endl;
+                //std::cout << "time diff= " << time_diff << std::endl;
+                //std::cout << "time diff ave= " << allFrames / (turning_total + straight_total) << std::endl;
 
                 std::cout << "group_10;" << stringTimeSample << ";" << calculated_steeringAngle << std::endl;
 
