@@ -34,6 +34,8 @@
 #define X_POSITION_OF_CAR 320
 #define Y_POSITION_OF_CAR 480
 
+
+//below code is inspired by the website: https://janhalozan.com/2019/06/01/lane-detector/
 cv::Mat getMatrix()
 {
 
@@ -58,10 +60,12 @@ cv::Mat getMatrix()
     dst_vertices[2] = cv::Point(390, 395);
     dst_vertices[3] = cv::Point(125, 395);
 
-    cv::Mat M = getPerspectiveTransform(src_vertices, dst_vertices);
+    cv::Mat M = getPerspectiveTransform(src_vertices, dst_vertices); //formulates a ratio for transfomation of every pixel or point
     return M;
 }
 
+
+//below code is inspired by the website: https://janhalozan.com/2019/06/01/lane-detector/
 std::vector<cv::Point2f> convertPoints(std::vector<cv::Point2f> coordinates)
 {
 
@@ -69,31 +73,36 @@ std::vector<cv::Point2f> convertPoints(std::vector<cv::Point2f> coordinates)
     std::vector<cv::Point2f> dst_points;
 
     // Changing perspective to birds-eye view
-    cv::perspectiveTransform(coordinates, dst_points, M);
+    cv::perspectiveTransform(coordinates, dst_points, M); //transforms every point based on the ratio declared)
     return dst_points;
 }
 
 double calculateAngleOfRoad(std::vector<cv::Point2f> cones_y_b){
 
+                    //to get the cone closes to the car
                     std::sort(cones_y_b.begin(), cones_y_b.end(),
                               [](const cv::Point2f &a, const cv::Point2f &b) {
-                                  return a.y > b.y; // Sorting in order from highest to lowest
+                                  return a.y > b.y; // Sorting in order from highest to lowest of the y values
                               });
 
+                    //uses pythagoras to get the straight distance of the car and the closest cone
                     double distance = std::sqrt(std::pow(cones_y_b[0].x - X_POSITION_OF_CAR, 2) +
                                                std::pow(cones_y_b[0].y - Y_POSITION_OF_CAR, 2) * 1.0);
 
                     double angle;
+                    //when the car is close enough to the cone, then we make the turns
                     if (distance < 200)
                     {
-                        // Getting the angle in radians
+                        // code below inspired from : https://www.cplusplus.com/reference/cmath/atan2/
+
+                        // Getting the angle in radians(angle the cones make with the positive x axis)
                         double radians =
                             std::atan2(cones_y_b[0].y - cones_y_b[1].y, cones_y_b[0].x - cones_y_b[1].x);
 
                         // Converting to degrees
                         double degrees = radians * 180 / PI;
 
-                        // Adjusting so the value is measured from right x axis
+                        // Adjusting so the value is measured from right x axis(if < 90, we need a higher angle to go right; if > 90, we need a lower angle to go left(negative))
                         double adjusted = 180 - degrees;
 
                         if (adjusted > 60 && adjusted < 120)
@@ -167,11 +176,14 @@ double calculateSteeringAngle(std::pair<std::vector<cv::Point2f>, std::vector<cv
 
                 double calculated_steeringAngle;
 
-                // after reverse engingeering the groundsteering requests we find out that the ground steering request that are less than 80 degrees means we can send ground steering request
+                // after reverse engingeering the groundsteering requests we find out that the ground steering request that are less than 90 degrees means we can send ground steering request
                 if ((angleOfRoad < 90) || (angleOfRoad > 90))
                 {
 
-                    // Getting a value between 0 and 0.6 based on the angle
+                    // from angle 0 to angle 180 (which is the extreme road angles) corresponds to a steering range between  -0.3  and 0.3 which is a total of 0.6
+                    // 0.6 / 180  = 0.0033333
+                    // the acceptable range of steering angle is a maximum of 0.3 thats why we subtract 0.3 
+                    // ( road angle * 0.003333 ) gives all the steering requests possible, and we subtract by 0.3 to keep it within the range
                     calculated_steeringAngle = ((angleOfRoad)*0.003333) - 0.3;
                 }
                 else
@@ -182,8 +194,12 @@ double calculateSteeringAngle(std::pair<std::vector<cv::Point2f>, std::vector<cv
                 return calculated_steeringAngle;
 }
 
+
+
+//below code is inspired by the website: https://medium.com/@devanshvarshney/object-detection-and-tracking-using-opencv-4f68aa41dd3a
+//and : https://learnopencv.com/find-center-of-blob-centroid-using-opencv-cpp-python/
 std::vector<cv::Point2f> drawContours(cv::Mat birdEyeView, cv::Mat reducedImg){
-    // YELLOW
+    
                 std::vector<std::vector<cv::Point>> contours;
                 std::vector<cv::Vec4i> hierarchy;
                 cv::findContours(reducedImg, contours, hierarchy, CV_RETR_TREE,
@@ -205,7 +221,7 @@ std::vector<cv::Point2f> drawContours(cv::Mat birdEyeView, cv::Mat reducedImg){
                                             float(mu[i].m01 / mu[i].m00));
                     mc[i].y = mc[i].y + 240;
 
-                    mc_transformed = convertPoints(mc);
+                    mc_transformed = convertPoints(mc); //transforms every point based on the ratio declared)
                 }
 
 
@@ -220,6 +236,8 @@ std::vector<cv::Point2f> drawContours(cv::Mat birdEyeView, cv::Mat reducedImg){
 }
 
 
+
+//below code is inspired by the website: https://docs.opencv.org/3.4/db/df6/tutorial_erosion_dilatation.html
 std::pair<cv::Mat, cv::Mat> reduceImage(std::pair<cv::Mat, cv::Mat> masked_y_b){
 
     std::pair<cv::Mat, cv::Mat> reducedImg;
@@ -445,7 +463,7 @@ int32_t main(int32_t argc, char **argv)
 
                 cv::Mat original = img.clone();
 
-                // Calculates a matrix of a perspective transform
+                // Calculates a matrix of a perspective transform(transforms every pixel based on the ratio declared)
 
                 cv::warpPerspective(original, dst, getMatrix(), dst.size(), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
 
