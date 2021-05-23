@@ -385,18 +385,7 @@ int32_t main(int32_t argc, char **argv)
 
             od4.dataTrigger(opendlv::proxy::GroundSteeringRequest::ID(), onGroundSteeringRequest);
 
-            IplImage *iplimage{nullptr};
-            CvSize size;
-            size.width = WIDTH;
-            size.height = HEIGHT;
 
-            iplimage = cvCreateImageHeader(size, IPL_DEPTH_8U, 4 /* four channels: ARGB */);
-            sharedMemory->lock();
-            {
-                iplimage->imageData = sharedMemory->data();
-                iplimage->imageDataOrigin = iplimage->imageData;
-            }
-            sharedMemory->unlock();
 
             double actual_steeringAngle;
 
@@ -445,8 +434,6 @@ int32_t main(int32_t argc, char **argv)
                     // Copy the pixels from the shared memory into our own data structure.
                     cv::Mat wrapped(HEIGHT, WIDTH, CV_8UC4, sharedMemory->data());
                     img = wrapped.clone();
-
-                    img = cv::cvarrToMat(iplimage);
 
                     cropped = img(cv::Rect(0, img.rows / 2, img.cols, 120));
                 }
@@ -546,10 +533,6 @@ int32_t main(int32_t argc, char **argv)
                 }
             }
 
-            if (nullptr != iplimage)
-            {
-                cvReleaseImageHeader(&iplimage);
-            }
         }
         retCode = 0;
     }
