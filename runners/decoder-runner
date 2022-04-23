@@ -1,0 +1,18 @@
+#!/bin/sh
+
+###############################################################
+# DECODER RUNNER
+# Starts the H264decoder in the opened terminal
+################################################################
+
+# Set name of terminal
+PS1=$
+PROMPT_COMMAND=
+echo -en "\033]0;DECODER TERMINAL\a"
+
+
+echo "RUNNER: Disabling access control."
+xhost +
+
+echo "RUNNER: Starting Decoder."
+docker run --rm -ti --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp:/tmp h264decoder:v0.0.4 --cid=253 --name=img
